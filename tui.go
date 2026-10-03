@@ -9,11 +9,17 @@ import (
 	"charm.land/lipgloss/v2"
 )
 
-type model struct {
+type session struct {
+	name   string
 	minute int
 	second int
-	height int
-	width  int
+}
+
+type model struct {
+	height       int
+	width        int
+	sessions     []session
+	sessionIndex int
 }
 
 type tickMsg time.Time
@@ -24,10 +30,10 @@ func tick() tea.Cmd {
 	})
 }
 
-func initModel(minute int) model {
+func initModel(sessions []session) model {
 	return model{
-		minute: minute,
-		second: 0,
+		sessions:     sessions,
+		sessionIndex: 0,
 	}
 }
 
@@ -36,6 +42,8 @@ func (m model) Init() tea.Cmd {
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	index := m.sessionIndex
+
 	switch msg := msg.(type) {
 
 	case tea.WindowSizeMsg:
@@ -43,14 +51,19 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.height = msg.Height
 
 	case tickMsg:
-		m.second -= 1
-		if m.second < 0 {
-			m.second = 59
-			m.minute -= 1
+		m.sessions[index].second -= 1
+		if m.sessions[index].second < 0 {
+			m.sessions[index].second = 59
+			m.sessions[index].minute -= 1
 		}
-		if m.minute < 0 {
-			return m, tea.Quit
+
+		if m.sessions[index].minute < 0 {
+			m.sessionIndex++
+			if m.sessionIndex >= len(m.sessions) {
+				return m, tea.Quit
+			}
 		}
+
 		return m, tick()
 
 	case tea.KeyPressMsg:
@@ -69,7 +82,12 @@ func (m model) View() tea.View {
 		Height(m.height).
 		Align(lipgloss.Center, lipgloss.Center)
 
-	s := fmt.Sprintf("Focus\n%02d:%02d", m.minute, m.second)
+	index := m.sessionIndex
+	if m.sessionIndex >= len(m.sessions) {
+		return tea.NewView("")
+	}
+
+	s := fmt.Sprintf("%s\n%02d:%02d", m.sessions[index].name, m.sessions[index].minute, m.sessions[index].second)
 
 	v := tea.NewView(style.Render(s))
 	v.AltScreen = true
@@ -77,9 +95,16 @@ func (m model) View() tea.View {
 	return v
 }
 
-func InitTUi(minute int) {
-	p := tea.NewProgram(initModel(minute))
+func InitTUi(c config) {
+	sessions := []session{
+		{c.focusSessionName, c.focusMinute, 0},
+	}
 
+	if c.breakMinute > 0 {
+		sessions = append(sessions, session{c.breakSessionName, c.breakMinute, 0})
+	}
+
+	p := tea.NewProgram(initModel(sessions))
 	if _, err := p.Run(); err != nil {
 		fmt.Printf("Alas, there's been an error: %v", err)
 		os.Exit(1)
