@@ -1,6 +1,11 @@
 package main
 
-import "hpdipto/flowterm/db"
+import (
+	"hpdipto/flowterm/db"
+	"os"
+
+	"github.com/joho/godotenv"
+)
 
 type config struct {
 	focusSessionName string
@@ -10,7 +15,12 @@ type config struct {
 }
 
 func main() {
-	db, err := db.Open("flowterm.db")
+	if err := godotenv.Load(); err != nil {
+		panic(err)
+	}
+
+	DB_NAME := os.Getenv("DB_NAME")
+	db, err := db.Open(DB_NAME)
 	if err != nil {
 		panic(err)
 	}
