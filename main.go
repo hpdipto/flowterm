@@ -1,5 +1,7 @@
 package main
 
+import "hpdipto/flowterm/db"
+
 type config struct {
 	focusSessionName string
 	focusMinute      int
@@ -8,6 +10,12 @@ type config struct {
 }
 
 func main() {
+	db, err := db.Open("flowterm.db")
+	if err != nil {
+		panic(err)
+	}
+	defer db.Close()
+
 	c := config{
 		focusSessionName: "Focus",
 		focusMinute:      25,
