@@ -1,6 +1,8 @@
 package main
 
-import "hpdipto/flowterm/db"
+import (
+	"hpdipto/flowterm/db"
+)
 
 func createSessionFromConfig(database *db.DB, c config) (*db.Session, error) {
 	session := &db.Session{

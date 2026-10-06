@@ -2,6 +2,7 @@ package main
 
 import (
 	"hpdipto/flowterm/db"
+	"hpdipto/flowterm/utils"
 	"os"
 
 	"github.com/joho/godotenv"
@@ -26,7 +27,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	defer conn.Close()
+	defer utils.LogDeferredError(conn.Close)
 
 	database = db.New(conn)
 

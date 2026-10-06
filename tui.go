@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"hpdipto/flowterm/utils"
 	"os"
 	"time"
 
@@ -58,7 +59,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.sessionIndex++
 
 			if m.sessionIndex >= len(m.sessions) {
-				closeSession(database, session.id, false)
+				utils.LogError(closeSession(database, session.id, false))
 				return m, tea.Quit
 			}
 
@@ -77,7 +78,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyPressMsg:
 		switch msg.String() {
 		case "ctrl+c", "q":
-			closeSession(database, m.sessions[index].id, true)
+			utils.LogError(closeSession(database, m.sessions[index].id, true))
 			return m, tea.Quit
 		}
 	}

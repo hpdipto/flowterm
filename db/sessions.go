@@ -2,6 +2,7 @@ package db
 
 import (
 	"fmt"
+	"hpdipto/flowterm/utils"
 	"strings"
 	"time"
 )
@@ -157,7 +158,7 @@ func (d *DB) ListSessions() ([]Session, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer utils.LogDeferredError(rows.Close)
 
 	var sessions []Session
 
