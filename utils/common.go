@@ -11,3 +11,9 @@ func LogError(err error) {
 func LogDeferredError(fn func() error) {
 	LogError(fn())
 }
+
+func PanicOnError(err error) {
+	if err != nil {
+		panic(err)
+	}
+}

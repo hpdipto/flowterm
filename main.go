@@ -30,6 +30,7 @@ func main() {
 	defer utils.LogDeferredError(conn.Close)
 
 	database = db.New(conn)
+	utils.PanicOnError(db.Migrate(conn))
 
 	c := config{
 		focusSessionName: "Focus",
