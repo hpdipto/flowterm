@@ -19,12 +19,14 @@ func main() {
 		panic(err)
 	}
 
-	DB_NAME := os.Getenv("DB_NAME")
-	db, err := db.Open(DB_NAME)
+	dbName := os.Getenv("DB_NAME")
+	conn, err := db.Open(dbName)
 	if err != nil {
 		panic(err)
 	}
-	defer db.Close()
+	defer conn.Close()
+
+	database := db.New(conn)
 
 	c := config{
 		focusSessionName: "Focus",
@@ -32,5 +34,9 @@ func main() {
 		breakSessionName: "Break",
 		breakMinute:      5,
 	}
+	if err := createSessionFromConfig(database, c); err != nil {
+		panic(err)
+	}
+
 	InitTUi(c)
 }
