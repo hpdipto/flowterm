@@ -7,6 +7,8 @@ import (
 	"github.com/joho/godotenv"
 )
 
+var database *db.DB
+
 type config struct {
 	focusSessionName string
 	focusMinute      int
@@ -26,7 +28,7 @@ func main() {
 	}
 	defer conn.Close()
 
-	database := db.New(conn)
+	database = db.New(conn)
 
 	c := config{
 		focusSessionName: "Focus",
@@ -34,9 +36,10 @@ func main() {
 		breakSessionName: "Break",
 		breakMinute:      5,
 	}
-	if err := createSessionFromConfig(database, c); err != nil {
+	session, err := createSessionFromConfig(database, c)
+	if err != nil {
 		panic(err)
 	}
 
-	InitTUi(c)
+	InitTUi(session.ID, c)
 }

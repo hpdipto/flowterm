@@ -10,6 +10,7 @@ import (
 )
 
 type session struct {
+	id     int64
 	name   string
 	minute int
 	second int
@@ -51,17 +52,24 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.height = msg.Height
 
 	case tickMsg:
-		m.sessions[index].second -= 1
-		if m.sessions[index].second < 0 {
-			m.sessions[index].second = 59
-			m.sessions[index].minute -= 1
-		}
+		session := &m.sessions[index]
 
-		if m.sessions[index].minute < 0 {
+		if session.second == 0 && session.minute == 0 {
 			m.sessionIndex++
+
 			if m.sessionIndex >= len(m.sessions) {
+				closeSession(database, session.id, false)
 				return m, tea.Quit
 			}
+
+			return m, tick()
+		}
+
+		if session.second > 0 {
+			session.second--
+		} else {
+			session.second = 59
+			session.minute--
 		}
 
 		return m, tick()
@@ -69,6 +77,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyPressMsg:
 		switch msg.String() {
 		case "ctrl+c", "q":
+			closeSession(database, m.sessions[index].id, true)
 			return m, tea.Quit
 		}
 	}
@@ -95,13 +104,13 @@ func (m model) View() tea.View {
 	return v
 }
 
-func InitTUi(c config) {
+func InitTUi(sessionId int64, c config) {
 	sessions := []session{
-		{c.focusSessionName, c.focusMinute, 0},
+		{sessionId, c.focusSessionName, c.focusMinute, 0},
 	}
 
 	if c.breakMinute > 0 {
-		sessions = append(sessions, session{c.breakSessionName, c.breakMinute, 0})
+		sessions = append(sessions, session{sessionId, c.breakSessionName, c.breakMinute, 0})
 	}
 
 	p := tea.NewProgram(initModel(sessions))
