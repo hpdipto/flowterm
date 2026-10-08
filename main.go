@@ -15,6 +15,7 @@ type config struct {
 	focusMinute      int
 	breakSessionName string
 	breakMinute      int
+	tags             []string
 }
 
 func main() {
@@ -37,6 +38,7 @@ func main() {
 		focusMinute:      25,
 		breakSessionName: "Break",
 		breakMinute:      5,
+		tags:             []string{"work", "agentic-coding"},
 	}
 	session, err := createSessionFromConfig(database, c)
 	if err != nil {

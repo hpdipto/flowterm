@@ -16,6 +16,17 @@ func createSessionFromConfig(database *db.DB, c config) (*db.Session, error) {
 	if err := database.CreateSession(session); err != nil {
 		return nil, err
 	}
+
+	for _, tagName := range c.tags {
+		tag, err := database.GetOrCreateTag(tagName)
+		if err != nil {
+			return nil, err
+		}
+		if err := database.AddTagToSession(session.ID, tag.ID); err != nil {
+			return nil, err
+		}
+	}
+
 	return session, nil
 }
 
