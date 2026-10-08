@@ -90,3 +90,22 @@ func (d *DB) GetOrCreateTag(name string) (*Tag, error) {
 
 	return tag, nil
 }
+
+func (d *DB) AddTagToSession(sessionID, tagID int64) error {
+	_, err := d.conn.Exec(`
+		INSERT OR IGNORE INTO session_tags (
+			session_id,
+			tag_id,
+			created_at,
+			updated_at
+		)
+		VALUES (?, ?, ?, ?)
+	`,
+		sessionID,
+		tagID,
+		time.Now(),
+		time.Now(),
+	)
+
+	return err
+}
