@@ -27,9 +27,9 @@ func main() {
 
 	c := config.Config{
 		FocusSessionName: "Focus",
-		FocusMinute:      1,
+		FocusMinute:      25,
 		BreakSessionName: "Break",
-		BreakMinute:      1,
+		BreakMinute:      5,
 		Tags:             []string{"work", "agentic-coding"},
 	}
 	session, err := db.CreateSessionFromConfig(database, c)
