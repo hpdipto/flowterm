@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"hpdipto/flowterm/utils"
 
 	_ "modernc.org/sqlite"
 )
@@ -21,7 +22,7 @@ func Open(path string) (*sql.DB, error) {
 	}
 
 	if err := db.Ping(); err != nil {
-		db.Close()
+		utils.LogError(db.Close())
 		return nil, err
 	}
 

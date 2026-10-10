@@ -1,7 +1,9 @@
-package main
+package tui
 
 import (
 	"fmt"
+	"hpdipto/flowterm/config"
+	"hpdipto/flowterm/db"
 	"hpdipto/flowterm/utils"
 	"os"
 	"time"
@@ -9,6 +11,8 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 )
+
+var database *db.DB
 
 type session struct {
 	id     int64
@@ -59,7 +63,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.sessionIndex++
 
 			if m.sessionIndex >= len(m.sessions) {
-				utils.LogError(closeSession(database, session.id, false))
+				utils.LogError(db.CloseSession(database, session.id, false))
 				return m, tea.Quit
 			}
 
@@ -78,7 +82,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyPressMsg:
 		switch msg.String() {
 		case "ctrl+c", "q":
-			utils.LogError(closeSession(database, m.sessions[index].id, true))
+			utils.LogError(db.CloseSession(database, m.sessions[index].id, true))
 			return m, tea.Quit
 		}
 	}
@@ -105,13 +109,17 @@ func (m model) View() tea.View {
 	return v
 }
 
-func InitTUi(sessionId int64, c config) {
-	sessions := []session{
-		{sessionId, c.focusSessionName, c.focusMinute, 0},
+func InitTUi(db *db.DB, sessionId int64, c config.Config) {
+	if database == nil {
+		database = db
 	}
 
-	if c.breakMinute > 0 {
-		sessions = append(sessions, session{sessionId, c.breakSessionName, c.breakMinute, 0})
+	sessions := []session{
+		{sessionId, c.FocusSessionName, c.FocusMinute, 0},
+	}
+
+	if c.BreakMinute > 0 {
+		sessions = append(sessions, session{sessionId, c.BreakSessionName, c.BreakMinute, 0})
 	}
 
 	p := tea.NewProgram(initModel(sessions))
