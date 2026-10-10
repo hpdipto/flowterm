@@ -140,15 +140,16 @@ func (m model) View() tea.View {
 		b.WriteString("Configure your session\n\n")
 
 		labels := []string{
-			"Focus session name",
-			"Focus duration (minutes)",
-			"Break session name",
-			"Break duration (minutes)",
+			"Focus name",
+			"Focus duration",
+			"Break name",
+			"Break duration",
 			"Tags",
 		}
 
 		for i, input := range m.inputs {
-			fmt.Fprintf(&b, "%s\n%s\n\n", labels[i], input.View())
+			label := lipgloss.NewStyle().Width(18).Render(labels[i])
+			fmt.Fprintf(&b, "%s %s\n\n", label, input.View())
 		}
 
 		if m.err != "" {
@@ -157,7 +158,12 @@ func (m model) View() tea.View {
 
 		b.WriteString("Enter: continue  |  Tab: default  |  Esc: skip break  |  Ctrl+C: quit")
 
-		v := tea.NewView(b.String())
+		style := lipgloss.NewStyle().
+			Width(m.width).
+			Height(m.height).
+			Align(lipgloss.Center, lipgloss.Center)
+
+		v := tea.NewView(style.Render(b.String()))
 		v.AltScreen = true
 		return v
 	}
@@ -167,12 +173,7 @@ func (m model) View() tea.View {
 	}
 
 	s := m.sessions[m.sessionIndex]
-	content := fmt.Sprintf(
-		"%s\n%02d:%02d",
-		s.name,
-		s.minute,
-		s.second,
-	)
+	content := fmt.Sprintf("%s\n%02d:%02d", s.name, s.minute, s.second)
 
 	style := lipgloss.NewStyle().
 		Width(m.width).
