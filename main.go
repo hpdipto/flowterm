@@ -1,7 +1,6 @@
 package main
 
 import (
-	"hpdipto/flowterm/config"
 	"hpdipto/flowterm/db"
 	"hpdipto/flowterm/tui"
 	"hpdipto/flowterm/utils"
@@ -25,17 +24,5 @@ func main() {
 	database := db.New(conn)
 	utils.PanicOnError(db.Migrate(conn))
 
-	c := config.Config{
-		FocusSessionName: "Focus",
-		FocusMinute:      25,
-		BreakSessionName: "Break",
-		BreakMinute:      5,
-		Tags:             []string{"work", "agentic-coding"},
-	}
-	session, err := db.CreateSessionFromConfig(database, c)
-	if err != nil {
-		panic(err)
-	}
-
-	tui.InitTUi(database, session.ID, c)
+	tui.InitTUi(database)
 }

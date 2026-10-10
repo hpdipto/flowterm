@@ -2,17 +2,15 @@ package tui
 
 import (
 	"fmt"
-	"hpdipto/flowterm/config"
 	"hpdipto/flowterm/db"
 	"hpdipto/flowterm/utils"
-	"os"
+	"strings"
 	"time"
 
+	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 )
-
-var database *db.DB
 
 type session struct {
 	id     int64
@@ -22,8 +20,13 @@ type session struct {
 }
 
 type model struct {
-	height       int
 	width        int
+	height       int
+	stage        stage
+	database     *db.DB
+	inputs       []textinput.Model
+	current      int
+	err          string
 	sessions     []session
 	sessionIndex int
 }
@@ -36,20 +39,11 @@ func tick() tea.Cmd {
 	})
 }
 
-func initModel(sessions []session) model {
-	return model{
-		sessions:     sessions,
-		sessionIndex: 0,
-	}
-}
-
 func (m model) Init() tea.Cmd {
-	return tick()
+	return textinput.Blink
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	index := m.sessionIndex
-
 	switch msg := msg.(type) {
 
 	case tea.WindowSizeMsg:
@@ -57,74 +51,143 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.height = msg.Height
 
 	case tickMsg:
-		session := &m.sessions[index]
+		if m.stage != timerStage {
+			return m, nil
+		}
 
-		if session.second == 0 && session.minute == 0 {
+		if m.sessionIndex >= len(m.sessions) {
+			return m, tea.Quit
+		}
+
+		s := &m.sessions[m.sessionIndex]
+
+		if s.second == 0 && s.minute == 0 {
 			m.sessionIndex++
 
 			if m.sessionIndex >= len(m.sessions) {
-				utils.LogError(db.CloseSession(database, session.id, false))
+				utils.LogError(db.CloseSession(m.database, s.id, false))
 				return m, tea.Quit
 			}
 
 			return m, tick()
 		}
 
-		if session.second > 0 {
-			session.second--
+		if s.second > 0 {
+			s.second--
 		} else {
-			session.second = 59
-			session.minute--
+			s.second = 59
+			s.minute--
 		}
 
 		return m, tick()
 
 	case tea.KeyPressMsg:
-		switch msg.String() {
-		case "ctrl+c", "q":
-			utils.LogError(db.CloseSession(database, m.sessions[index].id, true))
-			return m, tea.Quit
+		if m.stage == timerStage {
+			switch msg.String() {
+			case "ctrl+c", "q":
+				utils.LogError(db.CloseSession(
+					m.database,
+					m.sessions[m.sessionIndex].id,
+					true,
+				))
+				return m, tea.Quit
+			}
+
+			return m, nil
 		}
+
+		switch msg.String() {
+		case "ctrl+c":
+			return m, tea.Quit
+
+		case "tab":
+			switch m.current {
+			case focusName:
+				m.inputs[focusName].SetValue("Focus")
+			case breakName:
+				m.inputs[breakName].SetValue("Break")
+			default:
+				return m, nil
+			}
+
+			return m.nextInput()
+
+		case "esc":
+			if m.current == breakName {
+				m.inputs[breakName].SetValue("")
+				m.inputs[breakDuration].SetValue("0")
+				return m.goToInput(tags)
+			}
+
+		case "enter":
+			return m.submitInput()
+		}
+	}
+
+	if m.stage == configStage {
+		input, cmd := m.inputs[m.current].Update(msg)
+		m.inputs[m.current] = input
+		return m, cmd
 	}
 
 	return m, nil
 }
 
 func (m model) View() tea.View {
+	if m.stage == configStage {
+		var b strings.Builder
+
+		b.WriteString("Configure your session\n\n")
+
+		labels := []string{
+			"Focus session name",
+			"Focus duration (minutes)",
+			"Break session name",
+			"Break duration (minutes)",
+			"Tags",
+		}
+
+		for i, input := range m.inputs {
+			fmt.Fprintf(&b, "%s\n%s\n\n", labels[i], input.View())
+		}
+
+		if m.err != "" {
+			fmt.Fprintf(&b, "%s\n\n", m.err)
+		}
+
+		b.WriteString("Enter: continue  |  Tab: default  |  Esc: skip break  |  Ctrl+C: quit")
+
+		v := tea.NewView(b.String())
+		v.AltScreen = true
+		return v
+	}
+
+	if m.sessionIndex >= len(m.sessions) {
+		return tea.NewView("")
+	}
+
+	s := m.sessions[m.sessionIndex]
+	content := fmt.Sprintf(
+		"%s\n%02d:%02d",
+		s.name,
+		s.minute,
+		s.second,
+	)
+
 	style := lipgloss.NewStyle().
 		Width(m.width).
 		Height(m.height).
 		Align(lipgloss.Center, lipgloss.Center)
 
-	index := m.sessionIndex
-	if m.sessionIndex >= len(m.sessions) {
-		return tea.NewView("")
-	}
-
-	s := fmt.Sprintf("%s\n%02d:%02d", m.sessions[index].name, m.sessions[index].minute, m.sessions[index].second)
-
-	v := tea.NewView(style.Render(s))
+	v := tea.NewView(style.Render(content))
 	v.AltScreen = true
-
 	return v
 }
 
-func InitTUi(db *db.DB, sessionId int64, c config.Config) {
-	if database == nil {
-		database = db
-	}
+func InitTUi(database *db.DB) {
+	p := tea.NewProgram(newModel(database))
 
-	sessions := []session{
-		{sessionId, c.FocusSessionName, c.FocusMinute, 0},
-	}
-
-	if c.BreakMinute > 0 {
-		sessions = append(sessions, session{sessionId, c.BreakSessionName, c.BreakMinute, 0})
-	}
-
-	p := tea.NewProgram(initModel(sessions))
 	if _, err := p.Run(); err != nil {
-		fmt.Printf("Alas, there's been an error: %v", err)
-		os.Exit(1)
+		fmt.Printf("TUI error: %v\n", err)
 	}
 }
