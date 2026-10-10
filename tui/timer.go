@@ -24,7 +24,7 @@ func parseTags(value string) []string {
 func (m model) startTimer() (tea.Model, tea.Cmd) {
 	focusMinute, err := strconv.Atoi(strings.TrimSpace(m.inputs[focusDuration].Value()))
 	if err != nil || focusMinute <= 0 {
-		m.current = focusDuration
+		m.currentInput = focusDuration
 		m.err = "Enter a positive focus duration."
 		return m.goToInput(focusDuration)
 	}

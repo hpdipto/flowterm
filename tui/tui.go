@@ -25,7 +25,7 @@ type model struct {
 	stage        stage
 	database     *db.DB
 	inputs       []textinput.Model
-	current      int
+	currentInput int
 	err          string
 	sessions     []session
 	sessionIndex int
@@ -101,7 +101,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 
 		case "tab":
-			switch m.current {
+			switch m.currentInput {
 			case focusName:
 				m.inputs[focusName].SetValue("Focus")
 			case breakName:
@@ -113,7 +113,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m.nextInput()
 
 		case "esc":
-			if m.current == breakName {
+			if m.currentInput == breakName {
 				m.inputs[breakName].SetValue("")
 				m.inputs[breakDuration].SetValue("0")
 				return m.goToInput(tags)
@@ -125,8 +125,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	if m.stage == configStage {
-		input, cmd := m.inputs[m.current].Update(msg)
-		m.inputs[m.current] = input
+		input, cmd := m.inputs[m.currentInput].Update(msg)
+		m.inputs[m.currentInput] = input
 		return m, cmd
 	}
 

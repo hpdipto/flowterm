@@ -8,27 +8,27 @@ import (
 )
 
 func (m model) nextInput() (tea.Model, tea.Cmd) {
-	m.inputs[m.current].Blur()
-	m.current++
+	m.inputs[m.currentInput].Blur()
+	m.currentInput++
 
-	if m.current >= len(m.inputs) {
+	if m.currentInput >= len(m.inputs) {
 		return m.startTimer()
 	}
 
-	return m.goToInput(m.current)
+	return m.goToInput(m.currentInput)
 }
 
 func (m model) goToInput(index int) (tea.Model, tea.Cmd) {
-	m.inputs[m.current].Blur()
-	m.current = index
-	cmd := m.inputs[m.current].Focus()
+	m.inputs[m.currentInput].Blur()
+	m.currentInput = index
+	cmd := m.inputs[m.currentInput].Focus()
 	return m, cmd
 }
 
 func (m model) submitInput() (tea.Model, tea.Cmd) {
-	value := strings.TrimSpace(m.inputs[m.current].Value())
+	value := strings.TrimSpace(m.inputs[m.currentInput].Value())
 
-	switch m.current {
+	switch m.currentInput {
 	case focusName:
 		if value == "" {
 			m.inputs[focusName].SetValue("Focus")
@@ -56,7 +56,7 @@ func (m model) submitInput() (tea.Model, tea.Cmd) {
 
 	m.err = ""
 
-	if m.current == tags {
+	if m.currentInput == tags {
 		return m.startTimer()
 	}
 
