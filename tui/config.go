@@ -1,11 +1,14 @@
 package tui
 
 import (
+	"fmt"
 	"hpdipto/flowterm/db"
 	"image/color"
 	"os"
+	"strings"
 
 	"charm.land/bubbles/v2/textinput"
+	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 )
 
@@ -66,4 +69,38 @@ func newModel(database *db.DB) model {
 		database: database,
 		inputs:   inputs,
 	}
+}
+
+func (m model) configView() tea.View {
+	var b strings.Builder
+	b.WriteString("Configure your session\n\n")
+
+	labels := []string{
+		"Focus name",
+		"Focus duration",
+		"Break name",
+		"Break duration",
+		"Tags",
+	}
+
+	for i, input := range m.inputs {
+		label := lipgloss.NewStyle().Width(18).Render(labels[i])
+		fmt.Fprintf(&b, "%s %s\n\n", label, input.View())
+	}
+
+	if m.err != "" {
+		fmt.Fprintf(&b, "%s\n\n", m.err)
+	}
+
+	b.WriteString("Enter: continue  |  Tab: default  |  Esc: skip break  |  Ctrl+C: quit")
+
+	style := lipgloss.NewStyle().
+		Width(m.width).
+		Height(m.height).
+		Align(lipgloss.Center, lipgloss.Center)
+
+	v := tea.NewView(style.Render(b.String()))
+	v.AltScreen = true
+
+	return v
 }
