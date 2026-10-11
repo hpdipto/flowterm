@@ -3,11 +3,17 @@ package tui
 import (
 	"fmt"
 	"hpdipto/flowterm/db"
-	"hpdipto/flowterm/utils"
 	"time"
 
 	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
+)
+
+type stage int
+
+const (
+	configStage stage = iota
+	timerStage
 )
 
 type session struct {
@@ -47,85 +53,20 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
+		return m, nil
 
 	case tickMsg:
-		if m.stage != timerStage {
-			return m, nil
-		}
-
-		if m.sessionIndex >= len(m.sessions) {
-			return m, tea.Quit
-		}
-
-		s := &m.sessions[m.sessionIndex]
-
-		if s.second == 0 && s.minute == 0 {
-			m.sessionIndex++
-
-			if m.sessionIndex >= len(m.sessions) {
-				utils.LogError(db.CloseSession(m.database, s.id, false))
-				return m, tea.Quit
-			}
-
-			return m, tick()
-		}
-
-		if s.second > 0 {
-			s.second--
-		} else {
-			s.second = 59
-			s.minute--
-		}
-
-		return m, tick()
+		return m.sessionViewUpdate()
 
 	case tea.KeyPressMsg:
 		if m.stage == timerStage {
-			switch msg.String() {
-			case "ctrl+c", "q":
-				utils.LogError(db.CloseSession(
-					m.database,
-					m.sessions[m.sessionIndex].id,
-					true,
-				))
-				return m, tea.Quit
-			}
-
-			return m, nil
+			return m.sessionViewUpdateWithKey(msg)
 		}
-
-		switch msg.String() {
-		case "ctrl+c":
-			return m, tea.Quit
-
-		case "tab":
-			switch m.currentInput {
-			case focusName:
-				m.inputs[focusName].SetValue("Focus")
-			case breakName:
-				m.inputs[breakName].SetValue("Break")
-			default:
-				return m, nil
-			}
-
-			return m.nextInput()
-
-		case "esc":
-			if m.currentInput == breakName {
-				m.inputs[breakName].SetValue("")
-				m.inputs[breakDuration].SetValue("0")
-				return m.goToInput(tags)
-			}
-
-		case "enter":
-			return m.submitInput()
-		}
+		return m.configViewUpdateWithKey(msg)
 	}
 
 	if m.stage == configStage {
-		input, cmd := m.inputs[m.currentInput].Update(msg)
-		m.inputs[m.currentInput] = input
-		return m, cmd
+		return m.configViewUpdate(msg)
 	}
 
 	return m, nil

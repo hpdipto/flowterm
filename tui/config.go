@@ -10,13 +10,7 @@ import (
 	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-)
-
-type stage int
-
-const (
-	configStage stage = iota
-	timerStage
+	uv "github.com/charmbracelet/ultraviolet"
 )
 
 const (
@@ -103,4 +97,40 @@ func (m model) configView() tea.View {
 	v.AltScreen = true
 
 	return v
+}
+
+func (m model) configViewUpdate(msg uv.Event) (tea.Model, tea.Cmd) {
+	input, cmd := m.inputs[m.currentInput].Update(msg)
+	m.inputs[m.currentInput] = input
+	return m, cmd
+}
+
+func (m model) configViewUpdateWithKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "ctrl+c":
+		return m, tea.Quit
+
+	case "tab":
+		switch m.currentInput {
+		case focusName:
+			m.inputs[focusName].SetValue("Focus")
+		case breakName:
+			m.inputs[breakName].SetValue("Break")
+		default:
+			return m, nil
+		}
+		return m.nextInput()
+
+	case "esc":
+		if m.currentInput == breakName {
+			m.inputs[breakName].SetValue("")
+			m.inputs[breakDuration].SetValue("0")
+			return m.goToInput(tags)
+		}
+
+	case "enter":
+		return m.submitInput()
+	}
+
+	return m.configViewUpdate(msg)
 }
