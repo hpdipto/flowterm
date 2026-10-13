@@ -56,11 +56,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case tickMsg:
-		return m.timerViewUpdate()
+		return m.sessionViewUpdate()
 
 	case tea.KeyPressMsg:
 		if m.stage == timerStage {
-			return m.timerViewUpdateWithKey(msg)
+			return m.sessionViewUpdateWithKey(msg)
 		}
 		return m.configViewUpdateWithKey(msg)
 	}
