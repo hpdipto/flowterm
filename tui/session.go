@@ -59,6 +59,10 @@ func (m model) sessionViewUpdate() (tea.Model, tea.Cmd) {
 func (m model) sessionViewUpdateWithKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
 	case "ctrl+c", "q":
+		if m.sessionIndex >= len(m.sessions) {
+			return m, tea.Quit
+		}
+
 		utils.LogError(db.CloseSession(
 			m.database,
 			m.sessions[m.sessionIndex].id,
