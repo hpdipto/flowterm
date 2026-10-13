@@ -85,7 +85,7 @@ func (m model) View() tea.View {
 }
 
 func InitTUi(database *db.DB) {
-	p := tea.NewProgram(newModel(database))
+	p := tea.NewProgram(newConfigModel(database))
 
 	if _, err := p.Run(); err != nil {
 		fmt.Printf("TUI error: %v\n", err)

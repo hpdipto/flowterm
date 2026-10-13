@@ -29,7 +29,7 @@ func getCursorColor() color.Color {
 	return cursorColor
 }
 
-func newModel(database *db.DB) model {
+func newConfigModel(database *db.DB) model {
 	placeholders := []string{
 		"Press Tab to use default name (Focus)",
 		"Duration in minutes",
