@@ -24,7 +24,7 @@ func (m model) sessionView() tea.View {
 	return v
 }
 
-func (m model) sessionViewUpdate() (tea.Model, tea.Cmd) {
+func (m model) timerViewUpdate() (tea.Model, tea.Cmd) {
 	if m.stage != timerStage {
 		return m, nil
 	}
@@ -56,7 +56,7 @@ func (m model) sessionViewUpdate() (tea.Model, tea.Cmd) {
 	return m, tick()
 }
 
-func (m model) sessionViewUpdateWithKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
+func (m model) timerViewUpdateWithKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
 	case "ctrl+c", "q":
 		utils.LogError(db.CloseSession(
