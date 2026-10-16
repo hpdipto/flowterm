@@ -36,3 +36,40 @@ func TestTickReturnsTickMsg(t *testing.T) {
 		t.Errorf("msg = %T, want tickMsg", msg)
 	}
 }
+
+func TestUpdateRoutesKeyPressToConfigStage(t *testing.T) {
+	m := newConfigModel(nil)
+
+	_, cmd := m.Update(tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl})
+
+	msg := cmd()
+	if _, ok := msg.(tea.QuitMsg); !ok {
+		t.Errorf("msg = %T, want tea.QuitMsg", msg)
+	}
+}
+
+func TestUpdateRoutesKeyPressToTimerStage(t *testing.T) {
+	m := model{stage: timerStage}
+
+	_, cmd := m.Update(tea.KeyPressMsg{Code: 'q'})
+
+	msg := cmd()
+	if _, ok := msg.(tea.QuitMsg); !ok {
+		t.Errorf("msg = %T, want tea.QuitMsg", msg)
+	}
+}
+
+func TestUpdateIgnoresOtherMsgsAtTimerStage(t *testing.T) {
+	m := model{stage: timerStage}
+
+	updated, cmd := m.Update(struct{}{})
+	got := updated.(model)
+
+	if cmd != nil {
+		t.Errorf("cmd = %v, want nil", cmd)
+	}
+	if got.stage != timerStage {
+		t.Errorf("stage = %v, want timerStage",
+			got.stage)
+	}
+}
