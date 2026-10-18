@@ -2,9 +2,7 @@ package tui
 
 import (
 	"database/sql"
-	"hpdipto/flowterm/db"
-	"hpdipto/flowterm/utils"
-	"path/filepath"
+	"hpdipto/flowterm/internal/testsupport"
 	"strings"
 	"testing"
 )
@@ -12,21 +10,9 @@ import (
 func testModel(t *testing.T) (model, *sql.DB) {
 	t.Helper()
 
-	conn, err := db.Open(filepath.Join(t.TempDir(), "test.db"))
-	if err != nil {
-		t.Fatalf("open db: %v", err)
-	}
+	database, conn := testsupport.OpenDB(t)
 
-	if err := db.Migrate(conn); err != nil {
-		utils.LogError(conn.Close())
-		t.Fatalf("migrate db: %v", err)
-	}
-
-	t.Cleanup(func() {
-		utils.LogError(conn.Close())
-	})
-
-	return newConfigModel(db.New(conn)), conn
+	return newConfigModel(database), conn
 }
 
 func setInputValues(m *model, values map[int]string) {

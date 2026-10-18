@@ -1,32 +1,18 @@
-package db
+package db_test
 
 import (
+	"hpdipto/flowterm/db"
+	"hpdipto/flowterm/internal/testsupport"
 	"hpdipto/flowterm/utils"
 	"path/filepath"
 	"testing"
 	"time"
 )
 
-func newTestDB(t *testing.T) *DB {
-	t.Helper()
-
-	conn, err := Open(filepath.Join(t.TempDir(), "test.db"))
-	if err != nil {
-		t.Fatalf("open: %v", err)
-	}
-	t.Cleanup(func() { utils.LogError(conn.Close()) })
-
-	if err := Migrate(conn); err != nil {
-		t.Fatalf("migrate: %v", err)
-	}
-
-	return New(conn)
-}
-
 func TestCreateSession(t *testing.T) {
-	database := newTestDB(t)
+	database, _ := testsupport.OpenDB(t)
 
-	s := &Session{
+	s := &db.Session{
 		FocusSessionName:     "focus",
 		BreakSessionName:     "break",
 		FocusSessionDuration: 25,
@@ -82,10 +68,10 @@ func TestCreateSession(t *testing.T) {
 }
 
 func TestCreateSessionMultipleSessionsGetDistinctIDs(t *testing.T) {
-	database := newTestDB(t)
+	database, _ := testsupport.OpenDB(t)
 
-	first := &Session{FocusSessionName: "focus"}
-	second := &Session{FocusSessionName: "focus"}
+	first := &db.Session{FocusSessionName: "focus"}
+	second := &db.Session{FocusSessionName: "focus"}
 
 	if err := database.CreateSession(first); err != nil {
 		t.Fatalf("create first session: %v", err)
@@ -100,15 +86,15 @@ func TestCreateSessionMultipleSessionsGetDistinctIDs(t *testing.T) {
 }
 
 func TestCreateSessionMissingTable(t *testing.T) {
-	conn, err := Open(filepath.Join(t.TempDir(), "test.db"))
+	conn, err := db.Open(filepath.Join(t.TempDir(), "test.db"))
 	if err != nil {
 		t.Fatalf("open: %v", err)
 	}
 	t.Cleanup(func() { utils.LogError(conn.Close()) })
 
-	s := &Session{FocusSessionName: "focus"}
+	s := &db.Session{FocusSessionName: "focus"}
 
-	if err := New(conn).CreateSession(s); err == nil {
+	if err := db.New(conn).CreateSession(s); err == nil {
 		t.Error("expected error when sessions table is missing")
 	}
 	if s.ID != 0 {

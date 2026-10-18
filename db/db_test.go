@@ -1,13 +1,14 @@
-package db
+package db_test
 
 import (
+	"hpdipto/flowterm/db"
 	"hpdipto/flowterm/utils"
 	"path/filepath"
 	"testing"
 )
 
 func TestOpenValidPath(t *testing.T) {
-	conn, err := Open(filepath.Join(t.TempDir(), "test.db"))
+	conn, err := db.Open(filepath.Join(t.TempDir(), "test.db"))
 	if err != nil {
 		t.Fatalf("open: %v", err)
 	}
@@ -27,7 +28,7 @@ func TestOpenValidPath(t *testing.T) {
 }
 
 func TestOpenMissingDirectory(t *testing.T) {
-	if _, err := Open(filepath.Join(t.TempDir(), "missing", "test.db")); err == nil {
+	if _, err := db.Open(filepath.Join(t.TempDir(), "missing", "test.db")); err == nil {
 		t.Error("expected error for path in missing directory")
 	}
 }
