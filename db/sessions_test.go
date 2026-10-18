@@ -1,6 +1,8 @@
 package db_test
 
 import (
+	"database/sql"
+	"errors"
 	"hpdipto/flowterm/db"
 	"hpdipto/flowterm/internal/testsupport"
 	"hpdipto/flowterm/utils"
@@ -82,6 +84,50 @@ func TestCreateSessionMultipleSessionsGetDistinctIDs(t *testing.T) {
 
 	if first.ID == second.ID {
 		t.Errorf("both sessions got ID %d, want distinct ids", first.ID)
+	}
+}
+
+func TestGetSessionReturnsOnlyMatchingRow(t *testing.T) {
+	database, _ := testsupport.OpenDB(t)
+
+	first := &db.Session{FocusSessionName: "first", FocusSessionDuration: 10}
+	second := &db.Session{FocusSessionName: "second", FocusSessionDuration: 20}
+	for _, s := range []*db.Session{first, second} {
+		if err := database.CreateSession(s); err != nil {
+			t.Fatalf("create session: %v", err)
+		}
+	}
+
+	got, err := database.GetSession(second.ID)
+	if err != nil {
+		t.Fatalf("get session: %v", err)
+	}
+
+	if got.ID != second.ID {
+		t.Errorf("ID = %d, want %d", got.ID, second.ID)
+	}
+	if got.FocusSessionName != second.FocusSessionName {
+		t.Errorf("FocusSessionName = %q, want %q", got.FocusSessionName, second.FocusSessionName)
+	}
+	if got.FocusSessionDuration != second.FocusSessionDuration {
+		t.Errorf("FocusSessionDuration = %d, want %d", got.FocusSessionDuration, second.FocusSessionDuration)
+	}
+}
+
+func TestGetSessionMissingID(t *testing.T) {
+	database, _ := testsupport.OpenDB(t)
+
+	s := &db.Session{FocusSessionName: "focus"}
+	if err := database.CreateSession(s); err != nil {
+		t.Fatalf("create session: %v", err)
+	}
+
+	got, err := database.GetSession(s.ID + 1)
+	if !errors.Is(err, sql.ErrNoRows) {
+		t.Fatalf("err = %v, want %v", err, sql.ErrNoRows)
+	}
+	if got != nil {
+		t.Errorf("session = %+v, want nil", got)
 	}
 }
 
