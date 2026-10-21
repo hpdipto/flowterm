@@ -86,7 +86,7 @@ func (m model) configView() tea.View {
 		fmt.Fprintf(&b, "%s\n\n", m.err)
 	}
 
-	b.WriteString("Enter: continue  |  Tab: default  |  Esc: skip break  |  Ctrl+C: quit")
+	b.WriteString("Enter: continue  |  Tab: default  |  Shift+Tab: previous  |  Esc: skip break  |  Ctrl+C: quit")
 
 	style := lipgloss.NewStyle().
 		Width(m.width).
@@ -120,6 +120,12 @@ func (m model) configViewUpdateWithKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd)
 			return m, nil
 		}
 		return m.nextInput()
+
+	case "shift+tab":
+		if m.currentInput > 0 {
+			return m.goToInput(m.currentInput - 1)
+		}
+		return m, nil
 
 	case "esc":
 		if m.currentInput == breakName {

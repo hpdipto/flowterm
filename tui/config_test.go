@@ -250,3 +250,28 @@ func TestConfigEnterRejectsNonNumericBreakDuration(t *testing.T) {
 			updated.currentInput)
 	}
 }
+
+func TestConfigShiftTabReturnsToPreviousInput(t *testing.T) {
+	m := newConfigModel(nil)
+	m.currentInput = focusDuration
+	m.inputs[focusName].SetValue("Deep work")
+
+	updatedModel, _ := m.configViewUpdateWithKey(
+		tea.KeyPressMsg{Code: tea.KeyTab, Mod: tea.ModShift},
+	)
+	updated := updatedModel.(model)
+
+	if updated.currentInput != focusName {
+		t.Errorf("expected focus name input, got %v",
+			updated.currentInput)
+	}
+
+	if updated.inputs[focusName].Value() != "Deep work" {
+		t.Errorf("expected value kept, got %q",
+			updated.inputs[focusName].Value())
+	}
+
+	if !updated.inputs[focusName].Focused() {
+		t.Error("expected focus name input focused")
+	}
+}
