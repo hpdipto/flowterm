@@ -86,14 +86,19 @@ func (m model) configView() tea.View {
 		fmt.Fprintf(&b, "%s\n\n", m.err)
 	}
 
-	b.WriteString("Enter: continue  |  Tab: default  |  Shift+Tab: previous  |  Esc: skip break  |  Ctrl+C: quit")
-
-	style := lipgloss.NewStyle().
+	body := lipgloss.NewStyle().
 		Width(m.width).
-		Height(m.height).
-		Align(lipgloss.Center, lipgloss.Center)
+		Height(max(m.height-2, 0)).
+		Align(lipgloss.Center, lipgloss.Center).
+		Render(b.String())
 
-	v := tea.NewView(style.Render(b.String()))
+	footer := lipgloss.NewStyle().
+		Width(m.width).
+		Align(lipgloss.Center).
+		Render("Enter: continue  |  Tab: default  |  Shift+Tab: previous  |  Esc: skip break  |  Ctrl+C: quit")
+
+	v := tea.NewView(lipgloss.JoinVertical(lipgloss.Left, body, footer,
+		""))
 	v.AltScreen = true
 
 	return v
