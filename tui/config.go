@@ -67,7 +67,6 @@ func newConfigModel(database *db.DB) model {
 
 func (m model) configView() tea.View {
 	var b strings.Builder
-	b.WriteString("Configure your session\n\n")
 
 	labels := []string{
 		"Focus name",
@@ -86,9 +85,15 @@ func (m model) configView() tea.View {
 		fmt.Fprintf(&b, "%s\n\n", m.err)
 	}
 
-	body := lipgloss.NewStyle().
+	title := lipgloss.NewStyle().
 		Width(m.width).
-		Height(max(m.height-2, 0)).
+		Align(lipgloss.Center).
+		PaddingTop(2).
+		Render("Configure your session")
+
+	fields := lipgloss.NewStyle().
+		Width(m.width).
+		Height(max(m.height-5, 0)).
 		Align(lipgloss.Center, lipgloss.Center).
 		Render(b.String())
 
@@ -97,8 +102,7 @@ func (m model) configView() tea.View {
 		Align(lipgloss.Center).
 		Render("Enter: continue  |  Tab: default  |  Shift+Tab: previous  |  Esc: skip break  |  Ctrl+C: quit")
 
-	v := tea.NewView(lipgloss.JoinVertical(lipgloss.Left, body, footer,
-		""))
+	v := tea.NewView(lipgloss.JoinVertical(lipgloss.Left, title, fields, footer, ""))
 	v.AltScreen = true
 
 	return v
