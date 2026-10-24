@@ -11,7 +11,7 @@ import (
 
 func (m model) sessionView() tea.View {
 	s := m.sessions[m.sessionIndex]
-	content := fmt.Sprintf("%s\n%02d:%02d", s.name, s.minute, s.second)
+	content := fmt.Sprintf("%s\n%s", s.name, bigText(fmt.Sprintf("%02d:%02d", s.minute, s.second)))
 
 	style := lipgloss.NewStyle().
 		Width(m.width).
