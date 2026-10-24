@@ -22,8 +22,10 @@ func TestSessionView(t *testing.T) {
 		t.Error("expected session name in view")
 	}
 
-	if !strings.Contains(view.Content, "24:59") {
-		t.Error("expected remaining time in view")
+	for _, row := range strings.Split(bigText("24:59"), "\n") {
+		if !strings.Contains(view.Content, row) {
+			t.Errorf("expected clock row %q in view", row)
+		}
 	}
 
 	if !view.AltScreen {

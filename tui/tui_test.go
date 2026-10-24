@@ -93,8 +93,10 @@ func TestViewRendersTimerStage(t *testing.T) {
 	if !strings.Contains(got.Content, "Focus") {
 		t.Errorf("content missing session name: %q", got.Content)
 	}
-	if !strings.Contains(got.Content, "05:00") {
-		t.Errorf("content missing remaining time: %q", got.Content)
+	for _, row := range strings.Split(bigText("05:00"), "\n") {
+		if !strings.Contains(got.Content, row) {
+			t.Errorf("content missing clock row %q: %q", row, got.Content)
+		}
 	}
 }
 
