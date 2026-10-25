@@ -1,28 +1,20 @@
 package main
 
 import (
-	"hpdipto/flowterm/db"
-	"hpdipto/flowterm/tui"
-	"hpdipto/flowterm/utils"
+	"errors"
+	"flag"
+	"fmt"
 	"os"
-
-	"github.com/joho/godotenv"
 )
 
 func main() {
-	if err := godotenv.Load(); err != nil {
-		panic(err)
-	}
+	err := run(os.Args[1:])
 
-	dbName := os.Getenv("DB_NAME")
-	conn, err := db.Open(dbName)
+	if errors.Is(err, flag.ErrHelp) {
+		return
+	}
 	if err != nil {
-		panic(err)
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
 	}
-	defer utils.LogDeferredError(conn.Close)
-
-	database := db.New(conn)
-	utils.PanicOnError(db.Migrate(conn))
-
-	tui.InitTUi(database)
 }
