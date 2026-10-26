@@ -77,3 +77,21 @@ func TestRunStatsInvalidArgs(t *testing.T) {
 		})
 	}
 }
+
+func TestFormatTags(t *testing.T) {
+	tests := []struct {
+		in   string
+		want string
+	}{
+		{"", ""},
+		{"work", "#work"},
+		{"work,alpha", "#work #alpha"},
+	}
+
+	for _, tt := range tests {
+		if got := formatTags(tt.in); got != tt.want {
+			t.Errorf("formatTags(%q) = %q, want %q", tt.in, got,
+				tt.want)
+		}
+	}
+}
