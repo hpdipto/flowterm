@@ -49,3 +49,31 @@ func TestRunHelp(t *testing.T) {
 		t.Fatalf("got %v, want flag.ErrHelp", err)
 	}
 }
+
+func TestRunStatsInvalidArgs(t *testing.T) {
+	tests := []struct {
+		name string
+		args []string
+	}{
+		{name: "since zero", args: []string{
+			"stats", "--since",
+			"0",
+		}},
+		{name: "extra argument", args: []string{
+			"stats",
+			"extra",
+		}},
+		{name: "unknown flag", args: []string{
+			"stats",
+			"--bogus",
+		}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := run(tt.args); err == nil {
+				t.Fatalf("run(%v) = nil, want error", tt.args)
+			}
+		})
+	}
+}
