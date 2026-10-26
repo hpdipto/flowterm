@@ -8,9 +8,12 @@ import (
 	"hpdipto/flowterm/tui"
 	"hpdipto/flowterm/utils"
 	"os"
-	"text/tabwriter"
+	"strconv"
+	"strings"
 	"time"
 
+	"charm.land/lipgloss/v2/table"
+	"github.com/charmbracelet/x/term"
 	"github.com/joho/godotenv"
 )
 
@@ -81,6 +84,13 @@ func runTUI() error {
 	return nil
 }
 
+func formatTags(tags string) string {
+	if tags == "" {
+		return ""
+	}
+	return "#" + strings.ReplaceAll(tags, ",", " #")
+}
+
 func runStats(args []string) error {
 	fs := flag.NewFlagSet("flowterm stats", flag.ContinueOnError)
 	since := fs.Int("since", 1, "days to include, counting back from today")
@@ -115,18 +125,28 @@ func runStats(args []string) error {
 		return err
 	}
 
-	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(w, "name\tduration\tbreak_name\tbreak_duration\ttags")
-
+	rows := make([][]string, 0, len(stats))
 	for _, s := range stats {
-		fmt.Fprintf(w, "%s\t%d\t%s\t%d\t%s\n",
+		tags := formatTags(s.Tags)
+
+		rows = append(rows, []string{
 			s.FocusSessionName,
-			s.FocusSessionDuration,
+			strconv.Itoa(s.FocusSessionDuration),
 			s.BreakSessionName,
-			s.BreakSessionDuration,
-			s.Tags,
-		)
+			strconv.Itoa(s.BreakSessionDuration),
+			tags,
+		})
 	}
 
-	return w.Flush()
+	t := table.New().
+		Headers("name", "duration", "break_name", "break_duration", "tags").
+		Rows(rows...).
+		BorderRow(true)
+
+	if width, _, err := term.GetSize(os.Stdout.Fd()); err == nil {
+		t.Width(width)
+	}
+
+	fmt.Println(t.Render())
+	return nil
 }
