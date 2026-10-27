@@ -73,27 +73,36 @@ func seedStats(t *testing.T) (*db.DB, time.Time) {
 
 func TestListSessionStatsWindow(t *testing.T) {
 	database, now := seedStats(t)
+	since := now.Add(-90 * time.Minute)
 
-	stats, err := database.ListSessionStats(now.Add(-90*time.Minute), false)
+	completed, err := database.ListSessionStats(since, false)
+	if err != nil {
+		t.Fatalf("list stats: %v", err)
+	}
+	if len(completed) != 0 {
+		t.Fatalf("len(completed) = %d, want 0", len(completed))
+	}
+
+	all, err := database.ListSessionStats(since, true)
 	if err != nil {
 		t.Fatalf("list stats: %v", err)
 	}
 
-	if len(stats) != 1 {
-		t.Fatalf("len(stats) = %d, want 1", len(stats))
+	if len(all) != 1 {
+		t.Fatalf("len(all) = %d, want 1", len(all))
 	}
-	if stats[0].FocusSessionName != "beta" {
-		t.Errorf("name = %q, want %q", stats[0].FocusSessionName, "beta")
+	if all[0].FocusSessionName != "beta" {
+		t.Errorf("name = %q, want %q", all[0].FocusSessionName, "beta")
 	}
-	if stats[0].Tags != "" {
-		t.Errorf("tags = %q, want empty", stats[0].Tags)
+	if all[0].Tags != "" {
+		t.Errorf("tags = %q, want empty", all[0].Tags)
 	}
 }
 
 func TestListSessionStatsOrderAndFields(t *testing.T) {
 	database, now := seedStats(t)
 
-	stats, err := database.ListSessionStats(now.Add(-3*time.Hour), false)
+	stats, err := database.ListSessionStats(now.Add(-3*time.Hour), true)
 	if err != nil {
 		t.Fatalf("list stats: %v", err)
 	}
@@ -104,6 +113,12 @@ func TestListSessionStatsOrderAndFields(t *testing.T) {
 
 	if stats[0].FocusSessionName != "beta" || stats[1].FocusSessionName != "alpha" {
 		t.Fatalf("order = [%q %q], want [beta alpha]", stats[0].FocusSessionName, stats[1].FocusSessionName)
+	}
+	if !stats[0].Interrupted {
+		t.Error("beta interrupted = false, want true")
+	}
+	if stats[1].Interrupted {
+		t.Error("alpha interrupted = true, want false")
 	}
 
 	alpha := stats[1]
@@ -124,26 +139,26 @@ func TestListSessionStatsOrderAndFields(t *testing.T) {
 	}
 }
 
-func TestListSessionStatsInterruptedFilter(t *testing.T) {
+func TestListSessionStatsAllFilter(t *testing.T) {
 	database, now := seedStats(t)
 	since := now.Add(-3 * time.Hour)
 
-	all, err := database.ListSessionStats(since, false)
+	completed, err := database.ListSessionStats(since, false)
 	if err != nil {
 		t.Fatalf("list stats: %v", err)
 	}
-	if len(all) != 2 {
-		t.Fatalf("len(all) = %d, want 2", len(all))
+	if len(completed) != 1 {
+		t.Fatalf("len(completed) = %d, want 1", len(completed))
+	}
+	if completed[0].FocusSessionName != "alpha" {
+		t.Errorf("name = %q, want %q", completed[0].FocusSessionName, "alpha")
 	}
 
-	onlyInterrupted, err := database.ListSessionStats(since, true)
+	all, err := database.ListSessionStats(since, true)
 	if err != nil {
-		t.Fatalf("list interrupted stats: %v", err)
+		t.Fatalf("list all stats: %v", err)
 	}
-	if len(onlyInterrupted) != 1 {
-		t.Fatalf("len(onlyInterrupted) = %d, want 1", len(onlyInterrupted))
-	}
-	if onlyInterrupted[0].FocusSessionName != "beta" {
-		t.Errorf("name = %q, want %q", onlyInterrupted[0].FocusSessionName, "beta")
+	if len(all) != 2 {
+		t.Fatalf("len(all) = %d, want 2", len(all))
 	}
 }
