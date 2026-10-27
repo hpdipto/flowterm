@@ -10,16 +10,18 @@ type SessionStat struct {
 	FocusSessionDuration int
 	BreakSessionName     string
 	BreakSessionDuration int
+	Interrupted          bool
 	Tags                 string
 }
 
-func (d *DB) ListSessionStats(since time.Time, onlyInterrupted bool) ([]SessionStat, error) {
+func (d *DB) ListSessionStats(since time.Time, all bool) ([]SessionStat, error) {
 	query := `
 		SELECT
 			s.focus_session_name,
 			s.focus_session_duration,
 			s.break_session_name,
 			s.break_session_duration,
+			s.interrupted,
 			COALESCE(group_concat(t.name, ','), '')
 		FROM sessions s
 		LEFT JOIN session_tags st ON st.session_id = s.id
@@ -29,8 +31,8 @@ func (d *DB) ListSessionStats(since time.Time, onlyInterrupted bool) ([]SessionS
 
 	args := []any{since}
 
-	if onlyInterrupted {
-		query += " AND s.interrupted=1"
+	if !all {
+		query += " AND s.interrupted = 0"
 	}
 
 	query += `
@@ -53,6 +55,7 @@ func (d *DB) ListSessionStats(since time.Time, onlyInterrupted bool) ([]SessionS
 			&s.FocusSessionDuration,
 			&s.BreakSessionName,
 			&s.BreakSessionDuration,
+			&s.Interrupted,
 			&s.Tags,
 		); err != nil {
 			return nil, err

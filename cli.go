@@ -94,7 +94,7 @@ func formatTags(tags string) string {
 func runStats(args []string) error {
 	fs := flag.NewFlagSet("flowterm stats", flag.ContinueOnError)
 	since := fs.Int("since", 1, "days to include, counting back from today")
-	interrupted := fs.Bool("interrupted", false, "only interrupted sessions")
+	all := fs.Bool("all", false, "include interrupted sessions")
 
 	if err := fs.Parse(args); err != nil {
 		return err
@@ -119,27 +119,41 @@ func runStats(args []string) error {
 		0, 0, now.Location()).
 		AddDate(0, 0, -(*since - 1))
 
-	stats, err := db.New(conn).ListSessionStats(start,
-		*interrupted)
+	stats, err := db.New(conn).ListSessionStats(start, *all)
 	if err != nil {
 		return err
+	}
+
+	headers := []string{"name", "duration", "break_name", "break_duration", "tags"}
+	if *all {
+		headers = append(headers, "interrupted")
 	}
 
 	rows := make([][]string, 0, len(stats))
 	for _, s := range stats {
 		tags := formatTags(s.Tags)
 
-		rows = append(rows, []string{
+		row := []string{
 			s.FocusSessionName,
 			strconv.Itoa(s.FocusSessionDuration),
 			s.BreakSessionName,
 			strconv.Itoa(s.BreakSessionDuration),
 			tags,
-		})
+		}
+
+		if *all {
+			interrupted := "no"
+			if s.Interrupted {
+				interrupted = "yes"
+			}
+			row = append(row, interrupted)
+		}
+
+		rows = append(rows, row)
 	}
 
 	t := table.New().
-		Headers("name", "duration", "break_name", "break_duration", "tags").
+		Headers(headers...).
 		Rows(rows...).
 		BorderRow(true)
 
