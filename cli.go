@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"charm.land/lipgloss/v2"
 	"charm.land/lipgloss/v2/table"
 	"github.com/charmbracelet/x/term"
 	"github.com/joho/godotenv"
@@ -95,6 +96,7 @@ func runStats(args []string) error {
 	fs := flag.NewFlagSet("flowterm stats", flag.ContinueOnError)
 	since := fs.Int("since", 1, "days to include, counting back from today")
 	all := fs.Bool("all", false, "include interrupted sessions")
+	summary := fs.Bool("summary", false, "print session totals above the table")
 
 	if err := fs.Parse(args); err != nil {
 		return err
@@ -150,6 +152,26 @@ func runStats(args []string) error {
 		}
 
 		rows = append(rows, row)
+	}
+
+	if *summary {
+		totalDuration := 0
+		for _, s := range stats {
+			totalDuration += s.FocusSessionDuration
+		}
+
+		card := lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).Padding(0, 3)
+
+		sessions := card.Render(fmt.Sprintf("SESSIONS: %d", len(stats)))
+		focus := card.Render(fmt.Sprintf("FOCUS TIME: %d (min)", totalDuration))
+
+		cards := lipgloss.JoinHorizontal(lipgloss.Center, sessions, " ", focus)
+
+		if width, _, err := term.GetSize(os.Stdout.Fd()); err == nil {
+			cards = lipgloss.PlaceHorizontal(width, lipgloss.Center, cards)
+		}
+
+		fmt.Println(cards)
 	}
 
 	t := table.New().
