@@ -156,16 +156,24 @@ func runStats(args []string) error {
 
 	if *summary {
 		totalDuration := 0
+		tagSet := map[string]struct{}{}
 		for _, s := range stats {
 			totalDuration += s.FocusSessionDuration
+
+			for _, t := range strings.Split(s.Tags, ",") {
+				if t != "" {
+					tagSet[t] = struct{}{}
+				}
+			}
 		}
 
 		card := lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).Padding(0, 3)
 
 		sessions := card.Render(fmt.Sprintf("SESSIONS: %d", len(stats)))
 		focus := card.Render(fmt.Sprintf("FOCUS TIME: %d (min)", totalDuration))
+		tags := card.Render(fmt.Sprintf("TAGS: %d", len(tagSet)))
 
-		cards := lipgloss.JoinHorizontal(lipgloss.Center, sessions, " ", focus)
+		cards := lipgloss.JoinHorizontal(lipgloss.Center, sessions, " ", focus, " ", tags)
 
 		if width, _, err := term.GetSize(os.Stdout.Fd()); err == nil {
 			cards = lipgloss.PlaceHorizontal(width, lipgloss.Center, cards)
