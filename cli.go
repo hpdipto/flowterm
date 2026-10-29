@@ -185,6 +185,7 @@ func runStats(args []string) error {
 	t := table.New().
 		Headers(headers...).
 		Rows(rows...).
+		Border(lipgloss.RoundedBorder()).
 		BorderRow(true)
 
 	if width, _, err := term.GetSize(os.Stdout.Fd()); err == nil {
