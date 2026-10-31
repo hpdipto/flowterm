@@ -162,3 +162,66 @@ func TestListSessionStatsAllFilter(t *testing.T) {
 		t.Fatalf("len(all) = %d, want 2", len(all))
 	}
 }
+
+func insertActivityAt(t *testing.T, conn *sql.DB, sessionID int64, app, appName string, phase db.Phase, start time.Time, dur time.Duration) {
+	t.Helper()
+
+	if _, err := conn.Exec(`
+		INSERT INTO session_activities (
+			session_id,
+			app,
+			app_name,
+			phase,
+			started_at,
+			ended_at,
+			created_at,
+			updated_at
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+	`, sessionID, app, appName, phase, start, start.Add(dur), start, start); err != nil {
+		t.Fatalf("insert activity: %v", err)
+	}
+}
+
+func TestListSessionActivityStatsBucketsPhases(t *testing.T) {
+	database, conn := testsupport.OpenDB(t)
+
+	now := time.Now().Truncate(time.Second)
+	primary := insertSessionAt(t, conn, "primary", now, false)
+	legacy := insertSessionAt(t, conn, "legacy", now, false)
+
+	insertActivityAt(t, conn, primary, "com.apple.Safari", "Safari", db.PhaseFocus, now.Add(-20*time.Minute), 10*time.Minute)
+	insertActivityAt(t, conn, primary, "md.obsidian", "Obsidian", db.PhaseFocus, now.Add(-10*time.Minute), 5*time.Minute)
+	insertActivityAt(t, conn, primary, "com.brave.Browser", "Brave", db.PhaseBreak, now.Add(-5*time.Minute), 2*time.Minute)
+	insertActivityAt(t, conn, legacy, "com.legacy", "", "", now.Add(-4*time.Minute), 3*time.Minute)
+
+	stats, err := database.ListSessionActivityStats(now.AddDate(0, 0, -1), false)
+	if err != nil {
+		t.Fatalf("list activity stats: %v", err)
+	}
+
+	if len(stats) != 2 {
+		t.Fatalf("got %d sessions, want 2", len(stats))
+	}
+
+	got := stats[primary]
+	if len(got.Focus) != 2 {
+		t.Fatalf("focus spans = %d, want 2", len(got.Focus))
+	}
+	if got.Focus[0].Name != "Safari" || got.Focus[0].Duration != 10*time.Minute {
+		t.Errorf("first focus = %+v, want Safari 10m", got.Focus[0])
+	}
+	if got.Focus[1].Name != "Obsidian" || got.Focus[1].Duration != 5*time.Minute {
+		t.Errorf("second focus = %+v, want Obsidian 5m", got.Focus[1])
+	}
+	if len(got.Break) != 1 || got.Break[0].Name != "Brave" || got.Break[0].Duration != 2*time.Minute {
+		t.Errorf("break = %+v, want Brave 2m", got.Break)
+	}
+
+	withoutPhase := stats[legacy]
+	if len(withoutPhase.Focus) != 1 || withoutPhase.Focus[0].Name != "com.legacy" {
+		t.Errorf("legacy focus = %+v, want com.legacy fallback name", withoutPhase.Focus)
+	}
+	if len(withoutPhase.Break) != 0 {
+		t.Errorf("legacy break = %+v, want empty", withoutPhase.Break)
+	}
+}
