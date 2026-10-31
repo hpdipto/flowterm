@@ -98,7 +98,7 @@ func activityCell(stats []db.ActivityStat) string {
 		cells[i] = fmt.Sprintf("%s: %s", a.Name, a.Duration.Round(time.Second))
 	}
 
-	return strings.Join(cells, ", ")
+	return strings.Join(cells, "\n")
 }
 
 func runStats(args []string) error {
@@ -140,7 +140,7 @@ func runStats(args []string) error {
 		return err
 	}
 
-	headers := []string{"name", "duration", "break_name", "break_duration", "tags", "focus activities", "break activities"}
+	headers := []string{"Focus", "Duration", "Break", "Duration", "Tags", "Focus Activities", "Break Activities"}
 	if *all {
 		headers = append(headers, "interrupted")
 	}
