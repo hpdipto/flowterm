@@ -60,6 +60,8 @@ func (m model) startTimer() (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 
+	m.tracker = newTracker(m.database, s.ID)
+
 	for _, name := range c.Tags {
 		tag, err := m.database.GetOrCreateTag(name)
 		if err != nil {
@@ -89,5 +91,5 @@ func (m model) startTimer() (tea.Model, tea.Cmd) {
 	m.stage = timerStage
 	m.sessionIndex = 0
 
-	return m, tick()
+	return m, tea.Batch(tick(), sampleTick())
 }
