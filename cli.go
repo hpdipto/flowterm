@@ -152,6 +152,7 @@ func runStats(args []string) error {
 		acts := activities[s.ID]
 
 		row := []string{
+			s.CreatedAt.Format("02 Jan 15:04"),
 			s.FocusSessionName,
 			strconv.Itoa(s.FocusSessionDuration),
 			s.BreakSessionName,

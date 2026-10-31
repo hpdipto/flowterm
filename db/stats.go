@@ -8,6 +8,7 @@ import (
 
 type SessionStat struct {
 	ID                   int64
+	CreatedAt            time.Time
 	FocusSessionName     string
 	FocusSessionDuration int
 	BreakSessionName     string
@@ -20,6 +21,7 @@ func (d *DB) ListSessionStats(since time.Time, all bool) ([]SessionStat, error) 
 	query := `
 		SELECT
 			s.id,
+			s.created_at,
 			s.focus_session_name,
 			s.focus_session_duration,
 			s.break_session_name,
@@ -55,6 +57,7 @@ func (d *DB) ListSessionStats(since time.Time, all bool) ([]SessionStat, error) 
 
 		if err := rows.Scan(
 			&s.ID,
+			&s.CreatedAt,
 			&s.FocusSessionName,
 			&s.FocusSessionDuration,
 			&s.BreakSessionName,
