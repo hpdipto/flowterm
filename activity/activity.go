@@ -3,25 +3,11 @@
 package activity
 
 /*
-#cgo LDFLAGS: -framework AppKit -framework CoreGraphics
-#include <stdlib.h>
-#include <string.h>
-#include <objc/message.h>
-#include <objc/runtime.h>
+#cgo LDFLAGS: -framework CoreGraphics -framework CoreFoundation
 #include <CoreGraphics/CoreGraphics.h>
 #include <CoreFoundation/CoreFoundation.h>
 
 extern CFDictionaryRef CGSessionCopyCurrentDictionary(void);
-
-static char* front_bundle_id(void) {
-	id ws = ((id (*)(id, SEL))objc_msgSend)((id)objc_getClass("NSWorkspace"), sel_registerName("sharedWorkspace"));
-	id app = ((id (*)(id, SEL))objc_msgSend)(ws, sel_registerName("frontmostApplication"));
-	if (!app) return NULL;
-	id bid = ((id (*)(id, SEL))objc_msgSend)(app, sel_registerName("bundleIdentifier"));
-	if (!bid) return NULL;
-	const char *s = ((const char* (*)(id, SEL))objc_msgSend)(bid, sel_registerName("UTF8String"));
-	return s ? strdup(s) : NULL;
-}
 
 static double idle_seconds(void) {
 	return CGEventSourceSecondsSinceLastEventType(kCGEventSourceStateCombinedSessionState, kCGAnyInputEventType);
@@ -40,8 +26,9 @@ import "C"
 
 import (
 	"errors"
+	"os/exec"
+	"strings"
 	"time"
-	"unsafe"
 )
 
 const IdleLimit = 60 * time.Second
@@ -72,12 +59,23 @@ func Current() (Sample, error) {
 }
 
 func frontApp() (string, error) {
-	p := C.front_bundle_id()
-	if p == nil {
-		return "", errors.New("activity: no frontmost application")
+	asn, err := exec.Command("lsappinfo", "front").Output()
+	if err != nil {
+		return "", err
 	}
-	defer C.free(unsafe.Pointer(p))
-	return C.GoString(p), nil
+
+	info, err := exec.Command("lsappinfo", "info", "-only", "bundleid", strings.TrimSpace(string(asn))).Output()
+	if err != nil {
+		return "", err
+	}
+
+	for _, line := range strings.Split(string(info), "\n") {
+		if v, ok := strings.CutPrefix(strings.TrimSpace(line), "bundleID="); ok {
+			return strings.Trim(v, `"`), nil
+		}
+	}
+
+	return "", errors.New("activity: no frontmost application")
 }
 
 func idleTime() time.Duration {
