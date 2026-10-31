@@ -144,6 +144,7 @@ func runStats(args []string) error {
 	if *all {
 		headers = append(headers, "interrupted")
 	}
+	headers = append(headers, "Date")
 
 	rows := make([][]string, 0, len(stats))
 	for _, s := range stats {
@@ -152,7 +153,6 @@ func runStats(args []string) error {
 		acts := activities[s.ID]
 
 		row := []string{
-			s.CreatedAt.Format("02 Jan 15:04"),
 			s.FocusSessionName,
 			strconv.Itoa(s.FocusSessionDuration),
 			s.BreakSessionName,
@@ -169,6 +169,8 @@ func runStats(args []string) error {
 			}
 			row = append(row, interrupted)
 		}
+
+		row = append(row, s.CreatedAt.Format("02 Jan 2006 15:04"))
 
 		rows = append(rows, row)
 	}
