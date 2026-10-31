@@ -30,3 +30,12 @@ type SessionTag struct {
 	SessionID int64
 	TagID     int64
 }
+
+type SessionActivity struct {
+	BaseModel
+
+	SessionID int64
+	App       string
+	StartedAt time.Time
+	EndedAt   time.Time
+}
