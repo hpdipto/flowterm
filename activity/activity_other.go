@@ -21,6 +21,7 @@ func (r Run) Duration() time.Duration {
 
 type Sample struct {
 	App    string
+	Name   string
 	Idle   time.Duration
 	Locked bool
 }

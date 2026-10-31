@@ -45,37 +45,48 @@ func (r Run) Duration() time.Duration {
 
 type Sample struct {
 	App    string
+	Name   string
 	Idle   time.Duration
 	Locked bool
 }
 
 func Current() (Sample, error) {
-	app, err := frontApp()
+	app, name, err := frontApp()
 	if err != nil {
 		return Sample{}, err
 	}
 
-	return Sample{App: app, Idle: idleTime(), Locked: screenLocked()}, nil
+	return Sample{App: app, Name: name, Idle: idleTime(), Locked: screenLocked()}, nil
 }
 
-func frontApp() (string, error) {
+func frontApp() (string, string, error) {
 	asn, err := exec.Command("lsappinfo", "front").Output()
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
-	info, err := exec.Command("lsappinfo", "info", "-only", "bundleid", strings.TrimSpace(string(asn))).Output()
+	info, err := exec.Command("lsappinfo", "info", "-only", "name,bundleid", strings.TrimSpace(string(asn))).Output()
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
+
+	var bundle string
 
 	for _, line := range strings.Split(string(info), "\n") {
 		if v, ok := strings.CutPrefix(strings.TrimSpace(line), "bundleID="); ok {
-			return strings.Trim(v, `"`), nil
+			bundle = strings.Trim(v, `"`)
 		}
 	}
 
-	return "", errors.New("activity: no frontmost application")
+	if bundle == "" {
+		return "", "", errors.New("activity: no frontmost application")
+	}
+
+	head, _, _ := strings.Cut(string(info), "\n")
+	head, _ = strings.CutPrefix(strings.TrimSpace(head), `"`)
+	name, _, _ := strings.Cut(head, `"`)
+
+	return bundle, name, nil
 }
 
 func idleTime() time.Duration {
