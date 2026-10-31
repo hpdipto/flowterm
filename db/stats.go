@@ -70,12 +70,13 @@ func (d *DB) ListSessionStats(since time.Time, all bool) ([]SessionStat, error) 
 
 type ActivityStat struct {
 	App      string
+	Name     string
 	Duration time.Duration
 }
 
 func (d *DB) ListActivityStats(since time.Time, all bool) ([]ActivityStat, error) {
 	query := `
-		SELECT a.app, a.started_at, a.ended_at
+		SELECT a.app, a.app_name, a.started_at, a.ended_at
 		FROM session_activities a
 		JOIN sessions s ON s.id = a.session_id
 		WHERE s.created_at >= ?
@@ -94,16 +95,21 @@ func (d *DB) ListActivityStats(since time.Time, all bool) ([]ActivityStat, error
 	defer utils.LogDeferredError(rows.Close)
 
 	totals := map[string]time.Duration{}
+	names := map[string]string{}
 
 	for rows.Next() {
-		var app string
+		var app, name string
 		var start, end time.Time
 
-		if err := rows.Scan(&app, &start, &end); err != nil {
+		if err := rows.Scan(&app, &name, &start, &end); err != nil {
 			return nil, err
 		}
 
 		totals[app] += end.Sub(start)
+
+		if name != "" && names[app] == "" {
+			names[app] = name
+		}
 	}
 
 	if err := rows.Err(); err != nil {
@@ -112,7 +118,12 @@ func (d *DB) ListActivityStats(since time.Time, all bool) ([]ActivityStat, error
 
 	stats := make([]ActivityStat, 0, len(totals))
 	for app, duration := range totals {
-		stats = append(stats, ActivityStat{App: app, Duration: duration})
+		name := names[app]
+		if name == "" {
+			name = app
+		}
+
+		stats = append(stats, ActivityStat{App: app, Name: name, Duration: duration})
 	}
 
 	sort.Slice(stats, func(i, j int) bool { return stats[i].Duration > stats[j].Duration })

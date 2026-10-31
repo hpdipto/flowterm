@@ -35,6 +35,7 @@ const IdleLimit = 60 * time.Second
 
 type Run struct {
 	App   string
+	Name  string
 	Start time.Time
 	End   time.Time
 }

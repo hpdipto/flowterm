@@ -200,7 +200,7 @@ func runStats(args []string) error {
 	fmt.Println(t.Render())
 
 	for _, a := range activities {
-		fmt.Printf("%s: %s\n", a.App, a.Duration.Round(time.Second))
+		fmt.Printf("%s: %s\n", a.Name, a.Duration.Round(time.Second))
 	}
 
 	return nil

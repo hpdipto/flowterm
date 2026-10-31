@@ -18,9 +18,10 @@ func (t *tracker) sample(now time.Time, s activity.Sample) {
 		t.close(now, s)
 	case t.cur != nil && t.cur.App == s.App:
 		t.cur.End = now
+		t.cur.Name = s.Name
 	default:
 		t.finish()
-		t.cur = &activity.Run{App: s.App, Start: now, End: now}
+		t.cur = &activity.Run{App: s.App, Name: s.Name, Start: now, End: now}
 	}
 }
 
@@ -60,6 +61,7 @@ func (t *tracker) save(database *db.DB, sessionID int64) error {
 		a := db.SessionActivity{
 			SessionID: sessionID,
 			App:       r.App,
+			AppName:   r.Name,
 			StartedAt: r.Start,
 			EndedAt:   r.End,
 		}
