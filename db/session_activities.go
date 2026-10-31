@@ -14,16 +14,18 @@ func (d *DB) CreateSessionActivity(a *SessionActivity) error {
 			session_id,
 			app,
 			app_name,
+			phase,
 			started_at,
 			ended_at,
 			created_at,
 			updated_at
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 	`,
 		a.SessionID,
 		a.App,
 		a.AppName,
+		a.Phase,
 		a.StartedAt,
 		a.EndedAt,
 		now,
@@ -51,6 +53,7 @@ func (d *DB) ListSessionActivities(sessionID int64) ([]SessionActivity, error) {
 			session_id,
 			app,
 			app_name,
+			phase,
 			started_at,
 			ended_at,
 			created_at,
@@ -74,6 +77,7 @@ func (d *DB) ListSessionActivities(sessionID int64) ([]SessionActivity, error) {
 			&a.SessionID,
 			&a.App,
 			&a.AppName,
+			&a.Phase,
 			&a.StartedAt,
 			&a.EndedAt,
 			&a.CreatedAt,

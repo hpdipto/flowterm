@@ -31,12 +31,20 @@ type SessionTag struct {
 	TagID     int64
 }
 
+type Phase string
+
+const (
+	PhaseFocus Phase = "focus"
+	PhaseBreak Phase = "break"
+)
+
 type SessionActivity struct {
 	BaseModel
 
 	SessionID int64
 	App       string
 	AppName   string
+	Phase     Phase
 	StartedAt time.Time
 	EndedAt   time.Time
 }
