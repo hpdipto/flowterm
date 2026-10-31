@@ -59,7 +59,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tickMsg:
 		if s, err := activity.Current(); err == nil && m.tracker != nil {
-			m.tracker.sample(time.Now(), s)
+			phase := db.PhaseFocus
+			if m.sessionIndex > 0 {
+				phase = db.PhaseBreak
+			}
+
+			m.tracker.sample(time.Now(), s, phase)
 		}
 		return m.sessionViewUpdate()
 

@@ -33,17 +33,6 @@ import (
 
 const IdleLimit = 60 * time.Second
 
-type Run struct {
-	App   string
-	Name  string
-	Start time.Time
-	End   time.Time
-}
-
-func (r Run) Duration() time.Duration {
-	return r.End.Sub(r.Start)
-}
-
 type Sample struct {
 	App    string
 	Name   string

@@ -7,21 +7,29 @@ import (
 	"hpdipto/flowterm/db"
 )
 
-type tracker struct {
-	cur  *activity.Run
-	runs []activity.Run
+type span struct {
+	App   string
+	Name  string
+	Phase db.Phase
+	Start time.Time
+	End   time.Time
 }
 
-func (t *tracker) sample(now time.Time, s activity.Sample) {
+type tracker struct {
+	cur  *span
+	runs []span
+}
+
+func (t *tracker) sample(now time.Time, s activity.Sample, phase db.Phase) {
 	switch {
 	case s.Locked || s.Idle > activity.IdleLimit:
 		t.close(now, s)
-	case t.cur != nil && t.cur.App == s.App:
+	case t.cur != nil && t.cur.App == s.App && t.cur.Phase == phase:
 		t.cur.End = now
 		t.cur.Name = s.Name
 	default:
 		t.finish()
-		t.cur = &activity.Run{App: s.App, Name: s.Name, Start: now, End: now}
+		t.cur = &span{App: s.App, Name: s.Name, Phase: phase, Start: now, End: now}
 	}
 }
 
@@ -62,6 +70,7 @@ func (t *tracker) save(database *db.DB, sessionID int64) error {
 			SessionID: sessionID,
 			App:       r.App,
 			AppName:   r.Name,
+			Phase:     r.Phase,
 			StartedAt: r.Start,
 			EndedAt:   r.End,
 		}
