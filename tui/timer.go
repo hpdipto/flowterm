@@ -60,7 +60,7 @@ func (m model) startTimer() (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 
-	m.tracker = &tracker{}
+	m.tracker = newTracker(m.database, s.ID)
 
 	for _, name := range c.Tags {
 		tag, err := m.database.GetOrCreateTag(name)

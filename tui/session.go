@@ -81,5 +81,5 @@ func (m model) saveActivities() {
 		return
 	}
 
-	utils.LogError(m.tracker.save(m.database, m.sessions[0].id))
+	utils.LogError(m.tracker.stop())
 }

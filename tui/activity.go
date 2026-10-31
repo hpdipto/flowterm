@@ -16,8 +16,15 @@ type span struct {
 }
 
 type tracker struct {
+	database  *db.DB
+	sessionID int64
+
 	cur  *span
 	runs []span
+}
+
+func newTracker(database *db.DB, sessionID int64) *tracker {
+	return &tracker{database: database, sessionID: sessionID}
 }
 
 func (t *tracker) sample(now time.Time, s activity.Sample, phase db.Phase) {
@@ -60,14 +67,20 @@ func (t *tracker) finish() {
 	}
 
 	t.cur = nil
+	t.flush()
 }
 
-func (t *tracker) save(database *db.DB, sessionID int64) error {
-	t.finish()
+func (t *tracker) flush() error {
+	if len(t.runs) == 0 {
+		return nil
+	}
+
+	var firstErr error
+	kept := t.runs[:0]
 
 	for _, r := range t.runs {
 		a := db.SessionActivity{
-			SessionID: sessionID,
+			SessionID: t.sessionID,
 			App:       r.App,
 			AppName:   r.Name,
 			Phase:     r.Phase,
@@ -75,12 +88,21 @@ func (t *tracker) save(database *db.DB, sessionID int64) error {
 			EndedAt:   r.End,
 		}
 
-		if err := database.CreateSessionActivity(&a); err != nil {
-			return err
+		if err := t.database.CreateSessionActivity(&a); err != nil {
+			if firstErr == nil {
+				firstErr = err
+			}
+
+			kept = append(kept, r)
 		}
 	}
 
-	t.runs = nil
+	t.runs = kept
 
-	return nil
+	return firstErr
+}
+
+func (t *tracker) stop() error {
+	t.finish()
+	return t.flush()
 }
