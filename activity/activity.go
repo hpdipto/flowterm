@@ -60,6 +60,10 @@ func frontApp() (string, string, error) {
 		return "", "", err
 	}
 
+	return parseFront(info)
+}
+
+func parseFront(info []byte) (string, string, error) {
 	var bundle string
 
 	for _, line := range strings.Split(string(info), "\n") {
@@ -72,9 +76,11 @@ func frontApp() (string, string, error) {
 		return "", "", errors.New("activity: no frontmost application")
 	}
 
+	var name string
 	head, _, _ := strings.Cut(string(info), "\n")
-	head, _ = strings.CutPrefix(strings.TrimSpace(head), `"`)
-	name, _, _ := strings.Cut(head, `"`)
+	if rest, ok := strings.CutPrefix(strings.TrimSpace(head), `"`); ok {
+		name, _, _ = strings.Cut(rest, `"`)
+	}
 
 	return bundle, name, nil
 }
