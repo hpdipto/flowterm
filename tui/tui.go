@@ -39,9 +39,17 @@ type model struct {
 
 type tickMsg time.Time
 
+type sampleTickMsg time.Time
+
 func tick() tea.Cmd {
 	return tea.Tick(time.Second, func(t time.Time) tea.Msg {
 		return tickMsg(t)
+	})
+}
+
+func sampleTick() tea.Cmd {
+	return tea.Tick(500*time.Millisecond, func(t time.Time) tea.Msg {
+		return sampleTickMsg(t)
 	})
 }
 
@@ -58,7 +66,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case tickMsg:
-		if s, err := activity.Current(); err == nil && m.tracker != nil {
+		return m.sessionViewUpdate()
+
+	case sampleTickMsg:
+		if m.tracker == nil {
+			return m, nil
+		}
+
+		if s, err := activity.Current(); err == nil {
 			phase := db.PhaseFocus
 			if m.sessionIndex > 0 {
 				phase = db.PhaseBreak
@@ -66,7 +81,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			m.tracker.sample(time.Now(), s, phase)
 		}
-		return m.sessionViewUpdate()
+
+		return m, sampleTick()
 
 	case tea.KeyPressMsg:
 		if m.stage == timerStage {

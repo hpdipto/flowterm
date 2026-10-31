@@ -91,5 +91,5 @@ func (m model) startTimer() (tea.Model, tea.Cmd) {
 	m.stage = timerStage
 	m.sessionIndex = 0
 
-	return m, tick()
+	return m, tea.Batch(tick(), sampleTick())
 }
