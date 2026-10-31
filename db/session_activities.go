@@ -13,15 +13,17 @@ func (d *DB) CreateSessionActivity(a *SessionActivity) error {
 		INSERT INTO session_activities (
 			session_id,
 			app,
+			app_name,
 			started_at,
 			ended_at,
 			created_at,
 			updated_at
 		)
-		VALUES (?, ?, ?, ?, ?, ?)
+		VALUES (?, ?, ?, ?, ?, ?, ?)
 	`,
 		a.SessionID,
 		a.App,
+		a.AppName,
 		a.StartedAt,
 		a.EndedAt,
 		now,
@@ -48,6 +50,7 @@ func (d *DB) ListSessionActivities(sessionID int64) ([]SessionActivity, error) {
 			id,
 			session_id,
 			app,
+			app_name,
 			started_at,
 			ended_at,
 			created_at,
@@ -70,6 +73,7 @@ func (d *DB) ListSessionActivities(sessionID int64) ([]SessionActivity, error) {
 			&a.ID,
 			&a.SessionID,
 			&a.App,
+			&a.AppName,
 			&a.StartedAt,
 			&a.EndedAt,
 			&a.CreatedAt,

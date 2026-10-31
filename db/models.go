@@ -36,6 +36,7 @@ type SessionActivity struct {
 
 	SessionID int64
 	App       string
+	AppName   string
 	StartedAt time.Time
 	EndedAt   time.Time
 }
