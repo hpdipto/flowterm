@@ -39,6 +39,7 @@ func (m model) sessionViewUpdate() (tea.Model, tea.Cmd) {
 		m.sessionIndex++
 
 		if m.sessionIndex >= len(m.sessions) {
+			m.saveActivities()
 			utils.LogError(db.CloseSession(m.database, s.id, false))
 			return m, tea.Quit
 		}
@@ -63,6 +64,7 @@ func (m model) sessionViewUpdateWithKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd
 			return m, tea.Quit
 		}
 
+		m.saveActivities()
 		utils.LogError(db.CloseSession(
 			m.database,
 			m.sessions[m.sessionIndex].id,
@@ -72,4 +74,12 @@ func (m model) sessionViewUpdateWithKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd
 	}
 
 	return m, nil
+}
+
+func (m model) saveActivities() {
+	if m.tracker == nil || len(m.sessions) == 0 {
+		return
+	}
+
+	utils.LogError(m.tracker.save(m.database, m.sessions[0].id))
 }

@@ -60,6 +60,8 @@ func (m model) startTimer() (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 
+	m.tracker = &tracker{}
+
 	for _, name := range c.Tags {
 		tag, err := m.database.GetOrCreateTag(name)
 		if err != nil {

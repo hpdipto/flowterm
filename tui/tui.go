@@ -2,6 +2,7 @@ package tui
 
 import (
 	"fmt"
+	"hpdipto/flowterm/activity"
 	"hpdipto/flowterm/db"
 	"time"
 
@@ -33,6 +34,7 @@ type model struct {
 	err          string
 	sessions     []session
 	sessionIndex int
+	tracker      *tracker
 }
 
 type tickMsg time.Time
@@ -56,6 +58,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case tickMsg:
+		if s, err := activity.Current(); err == nil && m.tracker != nil {
+			m.tracker.sample(time.Now(), s)
+		}
 		return m.sessionViewUpdate()
 
 	case tea.KeyPressMsg:
