@@ -7,6 +7,7 @@ import (
 )
 
 type SessionStat struct {
+	ID                   int64
 	FocusSessionName     string
 	FocusSessionDuration int
 	BreakSessionName     string
@@ -18,6 +19,7 @@ type SessionStat struct {
 func (d *DB) ListSessionStats(since time.Time, all bool) ([]SessionStat, error) {
 	query := `
 		SELECT
+			s.id,
 			s.focus_session_name,
 			s.focus_session_duration,
 			s.break_session_name,
@@ -52,6 +54,7 @@ func (d *DB) ListSessionStats(since time.Time, all bool) ([]SessionStat, error) 
 		var s SessionStat
 
 		if err := rows.Scan(
+			&s.ID,
 			&s.FocusSessionName,
 			&s.FocusSessionDuration,
 			&s.BreakSessionName,
@@ -74,9 +77,14 @@ type ActivityStat struct {
 	Duration time.Duration
 }
 
-func (d *DB) ListActivityStats(since time.Time, all bool) ([]ActivityStat, error) {
+type ActivityStats struct {
+	Focus []ActivityStat
+	Break []ActivityStat
+}
+
+func (d *DB) ListSessionActivityStats(since time.Time, all bool) (map[int64]ActivityStats, error) {
 	query := `
-		SELECT a.app, a.app_name, a.started_at, a.ended_at
+		SELECT a.session_id, a.app, a.app_name, a.phase, a.started_at, a.ended_at
 		FROM session_activities a
 		JOIN sessions s ON s.id = a.session_id
 		WHERE s.created_at >= ?
@@ -94,21 +102,37 @@ func (d *DB) ListActivityStats(since time.Time, all bool) ([]ActivityStat, error
 	}
 	defer utils.LogDeferredError(rows.Close)
 
-	totals := map[string]time.Duration{}
-	names := map[string]string{}
+	totals := map[int64]map[Phase]map[string]time.Duration{}
+	names := map[int64]map[Phase]map[string]string{}
 
 	for rows.Next() {
+		var sessionID int64
 		var app, name string
+		var phase Phase
 		var start, end time.Time
 
-		if err := rows.Scan(&app, &name, &start, &end); err != nil {
+		if err := rows.Scan(&sessionID, &app, &name, &phase, &start, &end); err != nil {
 			return nil, err
 		}
 
-		totals[app] += end.Sub(start)
+		if phase != PhaseBreak {
+			phase = PhaseFocus
+		}
 
-		if name != "" && names[app] == "" {
-			names[app] = name
+		if totals[sessionID] == nil {
+			totals[sessionID] = map[Phase]map[string]time.Duration{}
+			names[sessionID] = map[Phase]map[string]string{}
+		}
+
+		if totals[sessionID][phase] == nil {
+			totals[sessionID][phase] = map[string]time.Duration{}
+			names[sessionID][phase] = map[string]string{}
+		}
+
+		totals[sessionID][phase][app] += end.Sub(start)
+
+		if name != "" && names[sessionID][phase][app] == "" {
+			names[sessionID][phase][app] = name
 		}
 	}
 
@@ -116,7 +140,20 @@ func (d *DB) ListActivityStats(since time.Time, all bool) ([]ActivityStat, error
 		return nil, err
 	}
 
+	result := make(map[int64]ActivityStats, len(totals))
+	for sessionID, phases := range totals {
+		result[sessionID] = ActivityStats{
+			Focus: buildActivityStats(phases[PhaseFocus], names[sessionID][PhaseFocus]),
+			Break: buildActivityStats(phases[PhaseBreak], names[sessionID][PhaseBreak]),
+		}
+	}
+
+	return result, nil
+}
+
+func buildActivityStats(totals map[string]time.Duration, names map[string]string) []ActivityStat {
 	stats := make([]ActivityStat, 0, len(totals))
+
 	for app, duration := range totals {
 		name := names[app]
 		if name == "" {
@@ -128,5 +165,5 @@ func (d *DB) ListActivityStats(since time.Time, all bool) ([]ActivityStat, error
 
 	sort.Slice(stats, func(i, j int) bool { return stats[i].Duration > stats[j].Duration })
 
-	return stats, nil
+	return stats
 }

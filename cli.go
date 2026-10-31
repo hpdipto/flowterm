@@ -92,6 +92,15 @@ func formatTags(tags string) string {
 	return "#" + strings.ReplaceAll(tags, ",", " #")
 }
 
+func activityCell(stats []db.ActivityStat) string {
+	cells := make([]string, len(stats))
+	for i, a := range stats {
+		cells[i] = fmt.Sprintf("%s: %s", a.Name, a.Duration.Round(time.Second))
+	}
+
+	return strings.Join(cells, ", ")
+}
+
 func runStats(args []string) error {
 	fs := flag.NewFlagSet("flowterm stats", flag.ContinueOnError)
 	since := fs.Int("since", 1, "days to include, counting back from today")
@@ -126,12 +135,12 @@ func runStats(args []string) error {
 		return err
 	}
 
-	activities, err := db.New(conn).ListActivityStats(start, *all)
+	activities, err := db.New(conn).ListSessionActivityStats(start, *all)
 	if err != nil {
 		return err
 	}
 
-	headers := []string{"name", "duration", "break_name", "break_duration", "tags"}
+	headers := []string{"name", "duration", "break_name", "break_duration", "tags", "focus activities", "break activities"}
 	if *all {
 		headers = append(headers, "interrupted")
 	}
@@ -140,12 +149,16 @@ func runStats(args []string) error {
 	for _, s := range stats {
 		tags := formatTags(s.Tags)
 
+		acts := activities[s.ID]
+
 		row := []string{
 			s.FocusSessionName,
 			strconv.Itoa(s.FocusSessionDuration),
 			s.BreakSessionName,
 			strconv.Itoa(s.BreakSessionDuration),
 			tags,
+			activityCell(acts.Focus),
+			activityCell(acts.Break),
 		}
 
 		if *all {
@@ -198,10 +211,6 @@ func runStats(args []string) error {
 	}
 
 	fmt.Println(t.Render())
-
-	for _, a := range activities {
-		fmt.Printf("%s: %s\n", a.Name, a.Duration.Round(time.Second))
-	}
 
 	return nil
 }
