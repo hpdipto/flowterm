@@ -126,6 +126,11 @@ func runStats(args []string) error {
 		return err
 	}
 
+	activities, err := db.New(conn).ListActivityStats(start, *all)
+	if err != nil {
+		return err
+	}
+
 	headers := []string{"name", "duration", "break_name", "break_duration", "tags"}
 	if *all {
 		headers = append(headers, "interrupted")
@@ -193,5 +198,10 @@ func runStats(args []string) error {
 	}
 
 	fmt.Println(t.Render())
+
+	for _, a := range activities {
+		fmt.Printf("%s: %s\n", a.App, a.Duration.Round(time.Second))
+	}
+
 	return nil
 }
