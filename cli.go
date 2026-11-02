@@ -69,7 +69,15 @@ func runTUI() error {
 		return err
 	}
 
-	conn, err := db.Open(os.Getenv("DB_NAME"))
+	path := os.Getenv("DB_NAME")
+
+	lock, err := acquireLock(path)
+	if err != nil {
+		return err
+	}
+	defer utils.LogDeferredError(lock.Close)
+
+	conn, err := db.Open(path)
 	if err != nil {
 		return err
 	}
