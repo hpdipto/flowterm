@@ -1,8 +1,12 @@
 package tui
 
 import (
+	"hpdipto/flowterm/activity"
+	"hpdipto/flowterm/db"
+	"hpdipto/flowterm/internal/testsupport"
 	"strings"
 	"testing"
+	"time"
 
 	tea "charm.land/bubbletea/v2"
 )
@@ -161,5 +165,56 @@ func TestSessionViewUpdateWithKeyQuitsWithoutSessions(t *testing.T) {
 
 	if _, ok := cmd().(tea.QuitMsg); !ok {
 		t.Error("expected tea.Quit command")
+	}
+}
+
+func TestSessionViewUpdateWithKeyQuitPersistsActivities(t *testing.T) {
+	database, conn := testsupport.OpenDB(t)
+
+	s := &db.Session{FocusSessionName: "Focus", FocusSessionDuration: 25}
+	if err := database.CreateSession(s); err != nil {
+		t.Fatalf("create session: %v", err)
+	}
+
+	m := model{
+		stage:    timerStage,
+		database: database,
+		sessions: []session{{id: s.ID, name: "Focus", minute: 25}},
+	}
+	m.tracker = newTracker(database, s.ID)
+
+	base := time.Now()
+	safari := activity.Sample{App: "com.apple.Safari", Name: "Safari"}
+	m.tracker.sample(base, safari, db.PhaseFocus)
+	m.tracker.sample(base.Add(2*time.Second), safari, db.PhaseFocus)
+
+	_, cmd := m.sessionViewUpdateWithKey(tea.KeyPressMsg{Code: 'q'})
+	if cmd == nil {
+		t.Fatal("expected quit command")
+	}
+	if _, ok := cmd().(tea.QuitMsg); !ok {
+		t.Fatalf("cmd() = %T, want tea.QuitMsg", cmd())
+	}
+
+	var interrupted bool
+	if err := conn.QueryRow("SELECT interrupted FROM sessions WHERE id = ?", s.ID).Scan(&interrupted); err != nil {
+		t.Fatalf("read interrupted: %v", err)
+	}
+	if !interrupted {
+		t.Error("quitting mid-session should mark the session interrupted")
+	}
+
+	acts, err := database.ListSessionActivities(s.ID)
+	if err != nil {
+		t.Fatalf("list activities: %v", err)
+	}
+	if len(acts) != 1 {
+		t.Fatalf("activities = %d, want 1", len(acts))
+	}
+	if acts[0].App != "com.apple.Safari" || acts[0].AppName != "Safari" {
+		t.Errorf("activity = %q/%q, want com.apple.Safari/Safari", acts[0].App, acts[0].AppName)
+	}
+	if !acts[0].EndedAt.After(acts[0].StartedAt) {
+		t.Errorf("ended_at %v not after started_at %v", acts[0].EndedAt, acts[0].StartedAt)
 	}
 }
