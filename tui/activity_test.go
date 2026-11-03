@@ -146,3 +146,63 @@ func TestTrackerLockEndsSpanAtSampleTime(t *testing.T) {
 		t.Errorf("locked span duration = %v, want 4s", got)
 	}
 }
+
+func TestTrackerKeepsSpansWhenFlushFails(t *testing.T) {
+	database, conn := testsupport.OpenDB(t)
+
+	s := &db.Session{FocusSessionName: "focus", FocusSessionDuration: 25}
+	if err := database.CreateSession(s); err != nil {
+		t.Fatalf("create session: %v", err)
+	}
+
+	tr := newTracker(database, s.ID)
+	base := time.Now()
+	safari := activity.Sample{App: "com.apple.Safari", Name: "Safari"}
+	obsidian := activity.Sample{App: "md.obsidian", Name: "Obsidian"}
+
+	tr.sample(base, safari, db.PhaseFocus)
+	tr.sample(base.Add(time.Second), safari, db.PhaseFocus)
+	tr.sample(base.Add(2*time.Second), obsidian, db.PhaseFocus)
+	tr.sample(base.Add(3*time.Second), obsidian, db.PhaseFocus)
+
+	if _, err := conn.Exec("DROP TABLE session_activities"); err != nil {
+		t.Fatalf("drop table: %v", err)
+	}
+
+	tr.sample(base.Add(4*time.Second), safari, db.PhaseFocus)
+
+	if err := tr.stop(); err == nil {
+		t.Fatal("expected error while the table is missing")
+	}
+
+	if _, err := conn.Exec(`
+		CREATE TABLE session_activities (
+			id INTEGER PRIMARY KEY,
+			session_id INTEGER NOT NULL,
+			app TEXT NOT NULL,
+			app_name TEXT NOT NULL DEFAULT '',
+			phase TEXT NOT NULL DEFAULT '',
+			started_at DATETIME NOT NULL,
+			ended_at DATETIME NOT NULL,
+			created_at DATETIME NOT NULL,
+			updated_at DATETIME NOT NULL
+		)
+	`); err != nil {
+		t.Fatalf("recreate table: %v", err)
+	}
+
+	if err := tr.stop(); err != nil {
+		t.Fatalf("retry flush: %v", err)
+	}
+
+	rows, err := database.ListSessionActivities(s.ID)
+	if err != nil {
+		t.Fatalf("list activities: %v", err)
+	}
+	if len(rows) != 1 {
+		t.Fatalf("activities = %d, want 1", len(rows))
+	}
+	if rows[0].App != "md.obsidian" {
+		t.Errorf("activity app = %q, want md.obsidian", rows[0].App)
+	}
+}

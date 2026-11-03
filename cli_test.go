@@ -11,6 +11,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestParseGlobal(t *testing.T) {
@@ -162,6 +163,32 @@ func seedCLIDatabase(t *testing.T) string {
 		}
 	}
 
+	now := time.Now()
+	activities := []*db.SessionActivity{
+		{
+			SessionID: sessions[0].ID,
+			App:       "com.apple.Safari",
+			AppName:   "Safari",
+			Phase:     db.PhaseFocus,
+			StartedAt: now,
+			EndedAt:   now.Add(3 * time.Second),
+		},
+		{
+			SessionID: sessions[0].ID,
+			App:       "md.obsidian",
+			AppName:   "Obsidian",
+			Phase:     db.PhaseBreak,
+			StartedAt: now,
+			EndedAt:   now.Add(5 * time.Second),
+		},
+	}
+
+	for _, a := range activities {
+		if err := database.CreateSessionActivity(a); err != nil {
+			t.Fatalf("create activity %q: %v", a.App, err)
+		}
+	}
+
 	return path
 }
 
@@ -216,7 +243,7 @@ func TestRunStatsFiltersInterruptedSessions(t *testing.T) {
 		t.Fatalf("runStats: %v", err)
 	}
 
-	for _, want := range []string{"Deep work", "Review", "#work", "#deep"} {
+	for _, want := range []string{"Deep work", "Review", "#work", "#deep", "Safari: 3s", "Obsidian: 5s"} {
 		if !strings.Contains(completed, want) {
 			t.Errorf("completed stats missing %q:\n%s", want, completed)
 		}
