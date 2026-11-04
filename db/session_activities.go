@@ -1,9 +1,8 @@
 package db
 
 import (
-	"time"
-
 	"hpdipto/flowterm/utils"
+	"time"
 )
 
 func (d *DB) CreateSessionActivity(a *SessionActivity) error {
@@ -90,4 +89,18 @@ func (d *DB) ListSessionActivities(sessionID int64) ([]SessionActivity, error) {
 	}
 
 	return activities, rows.Err()
+}
+
+func (d *DB) UpdateSessionActivityEnd(id int64, end time.Time) error {
+	_, err := d.conn.Exec(`
+      UPDATE session_activities
+      SET ended_at = ?, updated_at = ?
+      WHERE id = ?
+   `,
+		Timestamp(end),
+		Timestamp(time.Now()),
+		id,
+	)
+
+	return err
 }

@@ -44,8 +44,8 @@ func TestTrackerInsertsSpansAsTheyClose(t *testing.T) {
 	tr.sample(base, safari, db.PhaseFocus)
 	tr.sample(base.Add(time.Second), safari, db.PhaseFocus)
 
-	if got := countActivities(t, database, sessionID); got != 0 {
-		t.Fatalf("open span persisted early: %d rows", got)
+	if got := countActivities(t, database, sessionID); got != 1 {
+		t.Fatalf("open span not persisted: %d rows", got)
 	}
 
 	tr.sample(base.Add(2*time.Second), obsidian, db.PhaseFocus)
@@ -170,6 +170,7 @@ func TestTrackerKeepsSpansWhenFlushFails(t *testing.T) {
 	}
 
 	tr.sample(base.Add(4*time.Second), safari, db.PhaseFocus)
+	tr.sample(base.Add(5*time.Second), safari, db.PhaseFocus)
 
 	if err := tr.stop(); err == nil {
 		t.Fatal("expected error while the table is missing")
@@ -202,7 +203,30 @@ func TestTrackerKeepsSpansWhenFlushFails(t *testing.T) {
 	if len(rows) != 1 {
 		t.Fatalf("activities = %d, want 1", len(rows))
 	}
-	if rows[0].App != "md.obsidian" {
-		t.Errorf("activity app = %q, want md.obsidian", rows[0].App)
+	if rows[0].App != "com.apple.Safari" {
+		t.Errorf("activity app = %q, want com.apple.Safari", rows[0].App)
+	}
+}
+
+func TestTrackerPersistsOpenSpanWithoutStop(t *testing.T) {
+	database, sessionID := newTrackerSession(t)
+
+	tr := newTracker(database, sessionID)
+	base := time.Now()
+	safari := activity.Sample{App: "com.apple.Safari", Name: "Safari"}
+
+	tr.sample(base, safari, db.PhaseFocus)
+	tr.sample(base.Add(10*time.Second), safari, db.PhaseFocus)
+	tr.sample(base.Add(20*time.Second), safari, db.PhaseFocus)
+
+	rows, err := database.ListSessionActivities(sessionID)
+	if err != nil {
+		t.Fatalf("list activities: %v", err)
+	}
+	if len(rows) != 1 {
+		t.Fatalf("got %d spans, want 1", len(rows))
+	}
+	if got := rows[0].EndedAt.Sub(rows[0].StartedAt); got != 20*time.Second {
+		t.Errorf("open span duration = %v, want 20s", got)
 	}
 }

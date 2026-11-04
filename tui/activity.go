@@ -1,11 +1,13 @@
 package tui
 
 import (
-	"time"
-
 	"hpdipto/flowterm/activity"
 	"hpdipto/flowterm/db"
+	"hpdipto/flowterm/utils"
+	"time"
 )
+
+const spanSaveInterval = 5 * time.Second
 
 type span struct {
 	App   string
@@ -13,6 +15,8 @@ type span struct {
 	Phase db.Phase
 	Start time.Time
 	End   time.Time
+	ID    int64
+	Saved time.Time
 }
 
 type tracker struct {
@@ -34,6 +38,7 @@ func (t *tracker) sample(now time.Time, s activity.Sample, phase db.Phase) {
 	case t.cur != nil && t.cur.App == s.App && t.cur.Phase == phase:
 		t.cur.End = now
 		t.cur.Name = s.Name
+		t.persist(now)
 	default:
 		t.finish()
 		t.cur = &span{App: s.App, Name: s.Name, Phase: phase, Start: now, End: now}
@@ -62,12 +67,20 @@ func (t *tracker) finish() {
 		return
 	}
 
-	if t.cur.End.After(t.cur.Start) {
-		t.runs = append(t.runs, *t.cur)
+	s := *t.cur
+	t.cur = nil
+
+	if !s.End.After(s.Start) {
+		return
 	}
 
-	t.cur = nil
-	t.flush()
+	if s.ID != 0 {
+		_ = t.database.UpdateSessionActivityEnd(s.ID, s.End)
+		return
+	}
+
+	t.runs = append(t.runs, s)
+	utils.LogError(t.flush())
 }
 
 func (t *tracker) flush() error {
@@ -105,4 +118,37 @@ func (t *tracker) flush() error {
 func (t *tracker) stop() error {
 	t.finish()
 	return t.flush()
+}
+
+func (t *tracker) persist(now time.Time) {
+	if t.cur == nil || !t.cur.End.After(t.cur.Start) {
+		return
+	}
+
+	if t.cur.ID != 0 {
+		if now.Sub(t.cur.Saved) < spanSaveInterval {
+			return
+		}
+
+		_ = t.database.UpdateSessionActivityEnd(t.cur.ID, t.cur.End)
+		t.cur.Saved = now
+
+		return
+	}
+
+	a := db.SessionActivity{
+		SessionID: t.sessionID,
+		App:       t.cur.App,
+		AppName:   t.cur.Name,
+		Phase:     t.cur.Phase,
+		StartedAt: t.cur.Start,
+		EndedAt:   t.cur.End,
+	}
+
+	if err := t.database.CreateSessionActivity(&a); err != nil {
+		return
+	}
+
+	t.cur.ID = a.ID
+	t.cur.Saved = now
 }
