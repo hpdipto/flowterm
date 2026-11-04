@@ -183,3 +183,15 @@ func (d *DB) ListSessions() ([]Session, error) {
 
 	return sessions, rows.Err()
 }
+
+func (d *DB) MarkAbandonedSessions() error {
+	_, err := d.conn.Exec(`
+      UPDATE sessions
+      SET interrupted = 1, updated_at = ?
+      WHERE interrupted = 0 AND updated_at = created_at
+   `,
+		Timestamp(time.Now()),
+	)
+
+	return err
+}

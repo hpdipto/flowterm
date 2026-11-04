@@ -452,3 +452,78 @@ func TestCreateSessionMissingTable(t *testing.T) {
 		t.Errorf("ID = %d, want 0 after failed insert", s.ID)
 	}
 }
+
+func TestMarkAbandonedSessions(t *testing.T) {
+	database, _ := testsupport.OpenDB(t)
+
+	crashed := &db.Session{FocusSessionName: "crashed", FocusSessionDuration: 25}
+	if err := database.CreateSession(crashed); err != nil {
+		t.Fatalf("create crashed session: %v", err)
+	}
+
+	closed := &db.Session{FocusSessionName: "closed", FocusSessionDuration: 25}
+	if err := database.CreateSession(closed); err != nil {
+		t.Fatalf("create closed session: %v", err)
+	}
+	if err := db.CloseSession(database, closed.ID, false); err != nil {
+		t.Fatalf("close session: %v", err)
+	}
+
+	interrupted := &db.Session{
+		FocusSessionName:     "interrupted",
+		FocusSessionDuration: 25,
+		Interrupted:          true,
+	}
+	if err := database.CreateSession(interrupted); err != nil {
+		t.Fatalf("create interrupted session: %v", err)
+	}
+
+	if err := database.MarkAbandonedSessions(); err != nil {
+		t.Fatalf("mark abandoned: %v", err)
+	}
+
+	gotCrashed, err := database.GetSession(crashed.ID)
+	if err != nil {
+		t.Fatalf("get crashed session: %v", err)
+	}
+	if !gotCrashed.Interrupted {
+		t.Error("crashed session not marked interrupted")
+	}
+	if !gotCrashed.UpdatedAt.After(gotCrashed.CreatedAt) {
+		t.Error("crashed session updated_at not moved")
+	}
+
+	gotClosed, err := database.GetSession(closed.ID)
+	if err != nil {
+		t.Fatalf("get closed session: %v", err)
+	}
+	if gotClosed.Interrupted {
+		t.Error("closed session marked interrupted")
+	}
+	if !gotClosed.UpdatedAt.After(gotClosed.CreatedAt) {
+		t.Error("closed session updated_at not after created_at")
+	}
+
+	gotInterrupted, err := database.GetSession(interrupted.ID)
+	if err != nil {
+		t.Fatalf("get interrupted session: %v", err)
+	}
+	if !gotInterrupted.Interrupted {
+		t.Error("interrupted session flag lost")
+	}
+	if !gotInterrupted.UpdatedAt.Equal(gotInterrupted.CreatedAt) {
+		t.Error("interrupted session updated_at changed")
+	}
+
+	if err := database.MarkAbandonedSessions(); err != nil {
+		t.Fatalf("second mark abandoned: %v", err)
+	}
+
+	again, err := database.GetSession(crashed.ID)
+	if err != nil {
+		t.Fatalf("get crashed session after second sweep: %v", err)
+	}
+	if !again.UpdatedAt.Equal(gotCrashed.UpdatedAt) {
+		t.Errorf("second sweep moved updated_at: %v, want %v", again.UpdatedAt, gotCrashed.UpdatedAt)
+	}
+}

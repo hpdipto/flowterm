@@ -61,6 +61,11 @@ func openConn() (*sql.DB, error) {
 		return nil, err
 	}
 
+	if err := db.New(conn).MarkAbandonedSessions(); err != nil {
+		utils.LogDeferredError(conn.Close)
+		return nil, err
+	}
+
 	return conn, nil
 }
 
@@ -86,6 +91,10 @@ func runTUI() error {
 	database := db.New(conn)
 
 	if err := db.Migrate(conn); err != nil {
+		return err
+	}
+
+	if err := database.MarkAbandonedSessions(); err != nil {
 		return err
 	}
 

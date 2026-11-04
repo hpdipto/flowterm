@@ -144,6 +144,12 @@ func seedCLIDatabase(t *testing.T) string {
 		}
 	}
 
+	for _, index := range []int{0, 1} {
+		if err := db.CloseSession(database, sessions[index].ID, false); err != nil {
+			t.Fatalf("close session %q: %v", sessions[index].FocusSessionName, err)
+		}
+	}
+
 	tags := map[int][]string{
 		0: {"work", "deep"},
 		1: {"work"},
