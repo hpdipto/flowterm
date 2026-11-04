@@ -26,10 +26,10 @@ func (d *DB) CreateSessionActivity(a *SessionActivity) error {
 		a.App,
 		a.AppName,
 		a.Phase,
-		a.StartedAt,
-		a.EndedAt,
-		now,
-		now,
+		Timestamp(a.StartedAt),
+		Timestamp(a.EndedAt),
+		Timestamp(now),
+		Timestamp(now),
 	)
 	if err != nil {
 		return err

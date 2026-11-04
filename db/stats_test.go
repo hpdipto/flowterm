@@ -28,7 +28,7 @@ func insertSessionAt(t *testing.T, conn *sql.DB, name string, createdAt time.Tim
 			created_at,
 			updated_at
 		) VALUES (?, 'break', ?, ?, ?, ?, ?)
-	`, name, statFocusDuration, statBreakDuration, interrupted, createdAt, createdAt)
+	`, name, statFocusDuration, statBreakDuration, interrupted, db.Timestamp(createdAt), db.Timestamp(createdAt))
 	if err != nil {
 		t.Fatalf("insert session: %v", err)
 	}
@@ -177,7 +177,7 @@ func insertActivityAt(t *testing.T, conn *sql.DB, sessionID int64, app, appName 
 			created_at,
 			updated_at
 		) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-	`, sessionID, app, appName, phase, start, start.Add(dur), start, start); err != nil {
+	`, sessionID, app, appName, phase, db.Timestamp(start), db.Timestamp(start.Add(dur)), db.Timestamp(start), db.Timestamp(start)); err != nil {
 		t.Fatalf("insert activity: %v", err)
 	}
 }

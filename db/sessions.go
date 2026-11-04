@@ -35,8 +35,8 @@ func (d *DB) CreateSession(s *Session) error {
 		s.FocusSessionDuration,
 		s.BreakSessionDuration,
 		s.Interrupted,
-		now,
-		now,
+		Timestamp(now),
+		Timestamp(now),
 	)
 	if err != nil {
 		return err
@@ -119,7 +119,7 @@ func (d *DB) UpdateSession(id int64, update SessionUpdate) error {
 	}
 
 	set = append(set, "updated_at = ?")
-	args = append(args, time.Now())
+	args = append(args, Timestamp(time.Now()))
 
 	args = append(args, id)
 

@@ -193,7 +193,7 @@ func TestUpdateSessionEmptyUpdateIsNoop(t *testing.T) {
 	seeded := time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)
 	if _, err := conn.Exec(
 		"UPDATE sessions SET updated_at = ? WHERE id = ?",
-		seeded,
+		db.Timestamp(seeded),
 		s.ID,
 	); err != nil {
 		t.Fatalf("seed updated_at: %v", err)
@@ -349,7 +349,7 @@ func TestListSessionsNewestFirst(t *testing.T) {
 	for i, s := range sessions {
 		if _, err := conn.Exec(
 			"UPDATE sessions SET created_at = ? WHERE id = ?",
-			base.Add(time.Duration(i)*time.Minute),
+			db.Timestamp(base.Add(time.Duration(i)*time.Minute)),
 			s.ID,
 		); err != nil {
 			t.Fatalf("seed created_at: %v", err)
@@ -423,7 +423,7 @@ func TestListSessionsScanError(t *testing.T) {
 			updated_at
 		)
 		VALUES (?, ?, ?, ?, ?, ?, ?)
-	`, "focus", "break", "not-a-number", 5, false, now, now); err != nil {
+	`, "focus", "break", "not-a-number", 5, false, db.Timestamp(now), db.Timestamp(now)); err != nil {
 		t.Fatalf("insert malformed row: %v", err)
 	}
 

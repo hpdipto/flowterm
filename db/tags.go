@@ -49,8 +49,8 @@ func (d *DB) CreateTag(tag *Tag) error {
 		VALUES (?, ?, ?)
 	`,
 		tag.Name,
-		now,
-		now,
+		Timestamp(now),
+		Timestamp(now),
 	)
 	if err != nil {
 		return err
@@ -103,8 +103,8 @@ func (d *DB) AddTagToSession(sessionID, tagID int64) error {
 	`,
 		sessionID,
 		tagID,
-		time.Now(),
-		time.Now(),
+		Timestamp(time.Now()),
+		Timestamp(time.Now()),
 	)
 
 	return err

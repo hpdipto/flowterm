@@ -34,7 +34,7 @@ func (d *DB) ListSessionStats(since time.Time, all bool) ([]SessionStat, error) 
 		WHERE s.created_at >= ?
 	`
 
-	args := []any{since}
+	args := []any{Timestamp(since)}
 
 	if !all {
 		query += " AND s.interrupted = 0"
@@ -93,7 +93,7 @@ func (d *DB) ListSessionActivityStats(since time.Time, all bool) (map[int64]Acti
 		WHERE s.created_at >= ?
 	`
 
-	args := []any{since}
+	args := []any{Timestamp(since)}
 
 	if !all {
 		query += " AND s.interrupted = 0"
