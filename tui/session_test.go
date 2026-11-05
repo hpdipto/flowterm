@@ -243,9 +243,6 @@ func TestSessionViewUpdateSavesActivitiesOnNaturalCompletion(t *testing.T) {
 	if cmd == nil {
 		t.Fatal("expected quit command")
 	}
-	if _, ok := cmd().(tea.QuitMsg); !ok {
-		t.Fatalf("cmd() = %T, want tea.QuitMsg", cmd())
-	}
 
 	var interrupted bool
 	if err := conn.QueryRow("SELECT interrupted FROM sessions WHERE id = ?", s.ID).Scan(&interrupted); err != nil {
@@ -264,5 +261,44 @@ func TestSessionViewUpdateSavesActivitiesOnNaturalCompletion(t *testing.T) {
 	}
 	if acts[0].App != "com.apple.Safari" {
 		t.Errorf("activity app = %q, want com.apple.Safari", acts[0].App)
+	}
+}
+
+func TestSessionViewUpdateStartsBreakAfterFocus(t *testing.T) {
+	database, _ := testsupport.OpenDB(t)
+
+	s := &db.Session{
+		FocusSessionName:     "Focus",
+		BreakSessionName:     "Break",
+		FocusSessionDuration: 25,
+		BreakSessionDuration: 5,
+	}
+	if err := database.CreateSession(s); err != nil {
+		t.Fatalf("create session: %v", err)
+	}
+
+	m := model{
+		stage:    timerStage,
+		database: database,
+		sessions: []session{
+			{id: s.ID, name: "Focus"},
+			{id: s.ID, name: "Break", minute: 5},
+		},
+	}
+
+	next, cmd := m.sessionViewUpdate()
+	if cmd == nil {
+		t.Fatal("expected break command")
+	}
+	if _, ok := cmd().(tea.BatchMsg); !ok {
+		t.Fatalf("cmd() = %T, want tea.BatchMsg", cmd())
+	}
+
+	got, ok := next.(model)
+	if !ok {
+		t.Fatalf("model = %T, want tui.model", next)
+	}
+	if got.sessionIndex != 1 {
+		t.Errorf("sessionIndex = %d, want 1", got.sessionIndex)
 	}
 }

@@ -36,15 +36,21 @@ func (m model) sessionViewUpdate() (tea.Model, tea.Cmd) {
 	s := &m.sessions[m.sessionIndex]
 
 	if s.second == 0 && s.minute == 0 {
+		title := "Focus complete"
+		if m.sessionIndex > 0 {
+			title = "Break over"
+		}
+		cmd := notify(title, s.name+" session completed")
+
 		m.sessionIndex++
 
 		if m.sessionIndex >= len(m.sessions) {
 			m.saveActivities()
 			utils.LogError(db.CloseSession(m.database, s.id, false))
-			return m, tea.Quit
+			return m, tea.Sequence(cmd, tea.Quit)
 		}
 
-		return m, tick()
+		return m, tea.Batch(cmd, tick())
 	}
 
 	if s.second > 0 {
