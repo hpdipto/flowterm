@@ -1,6 +1,9 @@
 package tui
 
-import "strings"
+import (
+	"math"
+	"strings"
+)
 
 const bigTextHeight = 5
 
@@ -47,6 +50,53 @@ func bigText(s string) string {
 	for i := range lines {
 		rows[i] = lines[i].String()
 	}
+	return strings.Join(rows, "\n")
+}
+
+const (
+	cupInteriorWidth = 11
+	cupInteriorRows  = 6
+)
+
+func coffeeCup(ratio float64) string {
+	if math.IsNaN(ratio) {
+		ratio = 0
+	}
+	ratio = math.Max(0, math.Min(1, ratio))
+
+	filled := int(math.Ceil(ratio * cupInteriorRows))
+
+	empty := strings.Repeat(" ", cupInteriorWidth)
+	full := strings.Repeat("▓", cupInteriorWidth)
+
+	rows := make([]string, 0, cupInteriorRows+4)
+	if filled > 0 {
+		rows = append(rows, "      ~ ~ ~      ")
+	} else {
+		rows = append(rows, "                 ")
+	}
+
+	for i := range cupInteriorRows {
+		level := empty
+		if i >= cupInteriorRows-filled {
+			level = full
+		}
+
+		handle := "  "
+		switch i {
+		case 1:
+			handle = "──┐"
+		case 2, 3:
+			handle = "  │"
+		case 4:
+			handle = "──┘"
+		}
+
+		rows = append(rows, "  │"+level+"│"+handle)
+	}
+
+	rows = append(rows, "  ╰"+strings.Repeat("─", cupInteriorWidth)+"╯  ")
+
 	return strings.Join(rows, "\n")
 }
 
