@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"errors"
 	"fmt"
 	"os/exec"
 	"strconv"
@@ -16,7 +17,11 @@ func notify(title, body string) tea.Cmd {
 			strconv.Quote(title),
 		)
 
-		_ = exec.Command("osascript", "-e", script).Run()
+		err := exec.Command("osascript", "-e", script).Run()
+		if errors.Is(err, exec.ErrNotFound) {
+			fmt.Print("\a")
+			return nil
+		}
 		_ = exec.Command("afplay", "/System/Library/Sounds/Glass.aiff").Run()
 
 		return nil
