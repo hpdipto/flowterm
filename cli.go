@@ -8,6 +8,7 @@ import (
 	"hpdipto/flowterm/tui"
 	"hpdipto/flowterm/utils"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -123,6 +124,8 @@ func runStats(args []string) error {
 	since := fs.Int("since", 1, "days to include, counting back from today")
 	all := fs.Bool("all", false, "include interrupted sessions")
 	summary := fs.Bool("summary", false, "print session totals above the table")
+	tag := fs.String("tag", "", "only sessions with this tag")
+	apps := fs.Bool("apps", false, "print app totals")
 
 	if err := fs.Parse(args); err != nil {
 		return err
@@ -155,6 +158,19 @@ func runStats(args []string) error {
 	activities, err := db.New(conn).ListSessionActivityStats(start, *all)
 	if err != nil {
 		return err
+	}
+
+	if *tag != "" {
+		kept := stats[:0]
+		for _, s := range stats {
+			for _, name := range strings.Split(s.Tags, ",") {
+				if name == *tag {
+					kept = append(kept, s)
+					break
+				}
+			}
+		}
+		stats = kept
 	}
 
 	headers := []string{"Focus", "Duration", "Break", "Duration", "Tags", "Focus Activities", "Break Activities"}
@@ -232,5 +248,78 @@ func runStats(args []string) error {
 
 	fmt.Println(t.Render())
 
+	if *apps {
+		fmt.Println(appTable(stats, activities))
+	}
+
 	return nil
+}
+
+type appTotal struct {
+	name  string
+	focus time.Duration
+	rest  time.Duration
+}
+
+func appTable(sessions []db.SessionStat, activities map[int64]db.ActivityStats) string {
+	totals := map[string]*appTotal{}
+	add := func(stats []db.ActivityStat, focus bool) {
+		for _, a := range stats {
+			total := totals[a.App]
+			if total == nil {
+				total = &appTotal{name: a.Name}
+				totals[a.App] = total
+			}
+			if total.name == "" && a.Name != "" {
+				total.name = a.Name
+			}
+			if focus {
+				total.focus += a.Duration
+			} else {
+				total.rest += a.Duration
+			}
+		}
+	}
+
+	for _, s := range sessions {
+		acts := activities[s.ID]
+		add(acts.Focus, true)
+		add(acts.Break, false)
+	}
+
+	apps := make([]string, 0, len(totals))
+	for app := range totals {
+		apps = append(apps, app)
+	}
+	sort.Slice(apps, func(i, j int) bool {
+		a := totals[apps[i]]
+		b := totals[apps[j]]
+		return a.focus+a.rest > b.focus+b.rest
+	})
+
+	rows := make([][]string, 0, len(apps))
+	for _, app := range apps {
+		total := totals[app]
+		name := total.name
+		if name == "" {
+			name = app
+		}
+		rows = append(rows, []string{
+			name,
+			total.focus.Round(time.Second).String(),
+			total.rest.Round(time.Second).String(),
+		})
+	}
+
+	t := table.New().
+		Headers("App", "Focus", "Break").
+		Rows(rows...).
+		Border(lipgloss.RoundedBorder()).
+		BorderRow(true)
+
+	if width, _, err := term.GetSize(os.Stdout.Fd()); err == nil {
+		t.Width(width)
+	}
+
+	return t.Render()
 }

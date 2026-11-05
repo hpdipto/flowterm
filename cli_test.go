@@ -290,3 +290,48 @@ func TestRunStatsSummaryCountsUniqueTags(t *testing.T) {
 		}
 	}
 }
+
+func TestRunStatsTagAndApps(t *testing.T) {
+	path := seedCLIDatabase(t)
+	inCLIWorkspace(t, path)
+
+	deep, err := captureStdout(t, func() error {
+		return runStats([]string{"--tag", "deep"})
+	})
+	if err != nil {
+		t.Fatalf("runStats --tag deep: %v", err)
+	}
+	if !strings.Contains(deep, "Deep work") {
+		t.Errorf("tag deep output missing Deep work:\n%s", deep)
+	}
+	if strings.Contains(deep, "Review") {
+		t.Errorf("tag deep output contains Review:\n%s", deep)
+	}
+
+	work, err := captureStdout(t, func() error {
+		return runStats([]string{"--tag", "work"})
+	})
+	if err != nil {
+		t.Fatalf("runStats --tag work: %v", err)
+	}
+	for _, want := range []string{"Deep work", "Review"} {
+		if !strings.Contains(work, want) {
+			t.Errorf("tag work output missing %q:\n%s", want, work)
+		}
+	}
+	if strings.Contains(work, "Inbox") {
+		t.Errorf("tag work output contains interrupted session:\n%s", work)
+	}
+
+	apps, err := captureStdout(t, func() error {
+		return runStats([]string{"--apps"})
+	})
+	if err != nil {
+		t.Fatalf("runStats --apps: %v", err)
+	}
+	for _, want := range []string{"App", "Focus", "Break", "Safari", "Obsidian", "3s", "5s"} {
+		if !strings.Contains(apps, want) {
+			t.Errorf("apps output missing %q:\n%s", want, apps)
+		}
+	}
+}
