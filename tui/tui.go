@@ -22,6 +22,7 @@ type session struct {
 	name   string
 	minute int
 	second int
+	total  int
 }
 
 type model struct {

@@ -11,7 +11,25 @@ import (
 
 func (m model) sessionView() tea.View {
 	s := m.sessions[m.sessionIndex]
-	content := fmt.Sprintf("%s\n%s", s.name, bigText(fmt.Sprintf("%02d:%02d", s.minute, s.second)))
+
+	ratio := 0.0
+	if s.total > 0 {
+		remaining := float64(s.minute*60+s.second) / float64(s.total)
+		ratio = remaining
+		if m.sessionIndex > 0 {
+			ratio = 1 - remaining
+		}
+	}
+
+	width := clampInt(m.width/10, cupMinInteriorWidth, cupMaxInteriorWidth)
+	rows := clampInt(m.height/4, cupMinInteriorRows, cupMaxInteriorRows)
+
+	content := fmt.Sprintf(
+		"%s\n%s\n\n%s",
+		coffeeCup(ratio, width, rows),
+		bigText(fmt.Sprintf("%02d:%02d", s.minute, s.second)),
+		s.name,
+	)
 
 	style := lipgloss.NewStyle().
 		Width(m.width).

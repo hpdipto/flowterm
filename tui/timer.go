@@ -76,15 +76,20 @@ func (m model) startTimer() (tea.Model, tea.Cmd) {
 	}
 
 	m.sessions = []session{
-		{s.ID, c.FocusSessionName, c.FocusMinute, 0},
+		{
+			id:     s.ID,
+			name:   c.FocusSessionName,
+			minute: c.FocusMinute,
+			total:  c.FocusMinute * 60,
+		},
 	}
 
 	if c.BreakMinute > 0 {
 		m.sessions = append(m.sessions, session{
-			s.ID,
-			c.BreakSessionName,
-			c.BreakMinute,
-			0,
+			id:     s.ID,
+			name:   c.BreakSessionName,
+			minute: c.BreakMinute,
+			total:  c.BreakMinute * 60,
 		})
 	}
 
