@@ -21,9 +21,12 @@ func (m model) sessionView() tea.View {
 		}
 	}
 
+	width := clampInt(m.width/10, cupMinInteriorWidth, cupMaxInteriorWidth)
+	rows := clampInt(m.height/4, cupMinInteriorRows, cupMaxInteriorRows)
+
 	content := fmt.Sprintf(
 		"%s\n%s\n\n%s",
-		coffeeCup(ratio),
+		coffeeCup(ratio, width, rows),
 		bigText(fmt.Sprintf("%02d:%02d", s.minute, s.second)),
 		s.name,
 	)
