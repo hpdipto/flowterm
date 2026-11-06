@@ -2,6 +2,7 @@ package db_test
 
 import (
 	"hpdipto/flowterm/db"
+	"hpdipto/flowterm/internal/testsupport"
 	"hpdipto/flowterm/utils"
 	"path/filepath"
 	"testing"
@@ -30,5 +31,31 @@ func TestOpenValidPath(t *testing.T) {
 func TestOpenMissingDirectory(t *testing.T) {
 	if _, err := db.Open(filepath.Join(t.TempDir(), "missing", "test.db")); err == nil {
 		t.Error("expected error for path in missing directory")
+	}
+}
+
+func TestOpenEnforcesForeignKeys(t *testing.T) {
+	_, conn := testsupport.OpenDB(t)
+
+	var enabled int
+	if err := conn.QueryRow("PRAGMA foreign_keys").Scan(&enabled); err != nil {
+		t.Fatalf("read pragma: %v", err)
+	}
+	if enabled != 1 {
+		t.Fatalf("foreign_keys = %d, want 1", enabled)
+	}
+
+	_, err := conn.Exec(`
+		INSERT INTO session_activities (
+			session_id,
+			app,
+			started_at,
+			ended_at,
+			created_at,
+			updated_at
+		) VALUES (999, 'app', '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z')
+	`)
+	if err == nil {
+		t.Fatal("insert with missing session_id: want foreign key error, got nil")
 	}
 }

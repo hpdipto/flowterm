@@ -592,3 +592,56 @@ func TestDeleteAllSessions(t *testing.T) {
 		t.Errorf("tags = %d, want 2 kept (work from migration, focus)", gotTags)
 	}
 }
+
+func TestDeleteSessionCascadesChildren(t *testing.T) {
+	database, conn := testsupport.OpenDB(t)
+
+	s := &db.Session{
+		FocusSessionName:     "focus",
+		BreakSessionName:     "break",
+		FocusSessionDuration: 25,
+		BreakSessionDuration: 5,
+	}
+	if err := database.CreateSession(s); err != nil {
+		t.Fatalf("create session: %v", err)
+	}
+
+	tag, err := database.GetOrCreateTag("focus")
+	if err != nil {
+		t.Fatalf("create tag: %v", err)
+	}
+
+	if err := database.AddTagToSession(s.ID, tag.ID); err != nil {
+		t.Fatalf("add tag: %v", err)
+	}
+
+	activity := &db.SessionActivity{
+		SessionID: s.ID,
+		App:       "com.apple.Safari",
+		AppName:   "Safari",
+		Phase:     db.PhaseFocus,
+		StartedAt: s.CreatedAt,
+		EndedAt:   s.CreatedAt.Add(time.Minute),
+	}
+	if err := database.CreateSessionActivity(activity); err != nil {
+		t.Fatalf("create activity: %v", err)
+	}
+
+	if err := database.DeleteSession(s.ID); err != nil {
+		t.Fatalf("delete session: %v", err)
+	}
+
+	var gotActivities, gotLinks int
+
+	if err := conn.QueryRow(`
+		SELECT
+			(SELECT COUNT(*) FROM session_activities WHERE session_id = ?),
+			(SELECT COUNT(*) FROM session_tags WHERE session_id = ?)
+	`, s.ID, s.ID).Scan(&gotActivities, &gotLinks); err != nil {
+		t.Fatalf("count children: %v", err)
+	}
+
+	if gotActivities != 0 || gotLinks != 0 {
+		t.Errorf("children = activities %d, links %d; want both 0", gotActivities, gotLinks)
+	}
+}
