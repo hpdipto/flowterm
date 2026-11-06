@@ -242,5 +242,9 @@ func (d *DB) DeleteAllSessions() (DeleteAllResult, error) {
 		return DeleteAllResult{}, err
 	}
 
+	if _, err := d.conn.Exec("VACUUM"); err != nil {
+		return out, fmt.Errorf("vacuum: %w", err)
+	}
+
 	return out, nil
 }

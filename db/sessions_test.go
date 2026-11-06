@@ -6,6 +6,7 @@ import (
 	"hpdipto/flowterm/db"
 	"hpdipto/flowterm/internal/testsupport"
 	"hpdipto/flowterm/utils"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -643,5 +644,58 @@ func TestDeleteSessionCascadesChildren(t *testing.T) {
 
 	if gotActivities != 0 || gotLinks != 0 {
 		t.Errorf("children = activities %d, links %d; want both 0", gotActivities, gotLinks)
+	}
+}
+
+func TestDeleteAllSessionsVacuumsFile(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "test.db")
+
+	conn, err := db.Open(path)
+	if err != nil {
+		t.Fatalf("open db: %v", err)
+	}
+	t.Cleanup(func() { utils.LogError(conn.Close()) })
+
+	if err := db.Migrate(conn); err != nil {
+		t.Fatalf("migrate db: %v", err)
+	}
+
+	database := db.New(conn)
+
+	for i := 0; i < 200; i++ {
+		s := &db.Session{
+			FocusSessionName:     "focus",
+			BreakSessionName:     "break",
+			FocusSessionDuration: 25,
+			BreakSessionDuration: 5,
+		}
+		if err := database.CreateSession(s); err != nil {
+			t.Fatalf("create session %d: %v", i, err)
+		}
+	}
+
+	before, err := os.Stat(path)
+	if err != nil {
+		t.Fatalf("stat before: %v", err)
+	}
+
+	if _, err := database.DeleteAllSessions(); err != nil {
+		t.Fatalf("delete all sessions: %v", err)
+	}
+
+	var freelist int
+	if err := conn.QueryRow("PRAGMA freelist_count").Scan(&freelist); err != nil {
+		t.Fatalf("read freelist: %v", err)
+	}
+	if freelist != 0 {
+		t.Errorf("freelist_count = %d, want 0 after vacuum", freelist)
+	}
+
+	after, err := os.Stat(path)
+	if err != nil {
+		t.Fatalf("stat after: %v", err)
+	}
+	if after.Size() >= before.Size() {
+		t.Errorf("file size = %d, want smaller than %d", after.Size(), before.Size())
 	}
 }
