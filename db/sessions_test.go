@@ -527,3 +527,68 @@ func TestMarkAbandonedSessions(t *testing.T) {
 		t.Errorf("second sweep moved updated_at: %v, want %v", again.UpdatedAt, gotCrashed.UpdatedAt)
 	}
 }
+
+func TestDeleteAllSessions(t *testing.T) {
+	database, conn := testsupport.OpenDB(t)
+
+	sessions := []*db.Session{
+		{FocusSessionName: "one", BreakSessionName: "break", FocusSessionDuration: 25, BreakSessionDuration: 5},
+		{FocusSessionName: "two", BreakSessionName: "break", FocusSessionDuration: 25, BreakSessionDuration: 5},
+	}
+
+	for _, s := range sessions {
+		if err := database.CreateSession(s); err != nil {
+			t.Fatalf("create session: %v", err)
+		}
+	}
+
+	tag, err := database.GetOrCreateTag("focus")
+	if err != nil {
+		t.Fatalf("create tag: %v", err)
+	}
+
+	if err := database.AddTagToSession(sessions[0].ID, tag.ID); err != nil {
+		t.Fatalf("add tag: %v", err)
+	}
+
+	activity := &db.SessionActivity{
+		SessionID: sessions[0].ID,
+		App:       "com.apple.Safari",
+		AppName:   "Safari",
+		Phase:     db.PhaseFocus,
+		StartedAt: sessions[0].CreatedAt,
+		EndedAt:   sessions[0].CreatedAt.Add(time.Minute),
+	}
+	if err := database.CreateSessionActivity(activity); err != nil {
+		t.Fatalf("create activity: %v", err)
+	}
+
+	res, err := database.DeleteAllSessions()
+	if err != nil {
+		t.Fatalf("delete all sessions: %v", err)
+	}
+
+	if res.Sessions != 2 || res.Activities != 1 || res.TagLinks != 1 {
+		t.Fatalf("result = %+v, want 2 sessions, 1 activity, 1 tag link", res)
+	}
+
+	var gotSessions, gotActivities, gotLinks, gotTags int
+
+	if err := conn.QueryRow(`
+		SELECT
+			(SELECT COUNT(*) FROM sessions),
+			(SELECT COUNT(*) FROM session_activities),
+			(SELECT COUNT(*) FROM session_tags),
+			(SELECT COUNT(*) FROM tags)
+	`).Scan(&gotSessions, &gotActivities, &gotLinks, &gotTags); err != nil {
+		t.Fatalf("count rows: %v", err)
+	}
+
+	if gotSessions != 0 || gotActivities != 0 || gotLinks != 0 {
+		t.Errorf("rows = sessions %d, activities %d, links %d; want all 0", gotSessions, gotActivities, gotLinks)
+	}
+
+	if gotTags != 2 {
+		t.Errorf("tags = %d, want 2 kept (work from migration, focus)", gotTags)
+	}
+}

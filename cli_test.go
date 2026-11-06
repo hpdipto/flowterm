@@ -335,3 +335,22 @@ func TestRunStatsTagAndApps(t *testing.T) {
 		}
 	}
 }
+
+func TestRunDeleteInvalidArgs(t *testing.T) {
+	tests := []struct {
+		name string
+		args []string
+	}{
+		{name: "missing all flag", args: []string{"delete"}},
+		{name: "extra argument", args: []string{"delete", "--all", "extra"}},
+		{name: "unknown flag", args: []string{"delete", "--bogus"}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := run(tt.args); err == nil {
+				t.Fatal("expected error, got nil")
+			}
+		})
+	}
+}

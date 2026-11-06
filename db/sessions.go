@@ -1,6 +1,8 @@
 package db
 
 import (
+	"database/sql"
+	"errors"
 	"fmt"
 	"hpdipto/flowterm/utils"
 	"strings"
@@ -13,6 +15,12 @@ type SessionUpdate struct {
 	FocusSessionDuration *int
 	BreakSessionDuration *int
 	Interrupted          *bool
+}
+
+type DeleteAllResult struct {
+	Sessions   int64
+	Activities int64
+	TagLinks   int64
 }
 
 func (d *DB) CreateSession(s *Session) error {
@@ -194,4 +202,45 @@ func (d *DB) MarkAbandonedSessions() error {
 	)
 
 	return err
+}
+
+func (d *DB) DeleteAllSessions() (DeleteAllResult, error) {
+	tx, err := d.conn.Begin()
+	if err != nil {
+		return DeleteAllResult{}, err
+	}
+	defer func() {
+		if err := tx.Rollback(); err != nil && !errors.Is(err, sql.ErrTxDone) {
+			utils.LogError(err)
+		}
+	}()
+
+	del := func(table string) (int64, error) {
+		res, err := tx.Exec("DELETE FROM " + table)
+		if err != nil {
+			return 0, err
+		}
+
+		return res.RowsAffected()
+	}
+
+	var out DeleteAllResult
+
+	if out.Activities, err = del("session_activities"); err != nil {
+		return DeleteAllResult{}, err
+	}
+
+	if out.TagLinks, err = del("session_tags"); err != nil {
+		return DeleteAllResult{}, err
+	}
+
+	if out.Sessions, err = del("sessions"); err != nil {
+		return DeleteAllResult{}, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return DeleteAllResult{}, err
+	}
+
+	return out, nil
 }

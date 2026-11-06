@@ -42,6 +42,8 @@ func run(args []string) error {
 	switch rest[0] {
 	case "stats":
 		return runStats(rest[1:])
+	case "delete":
+		return runDelete(rest[1:])
 	default:
 		return fmt.Errorf("unknown command %q", rest[0])
 	}
@@ -322,4 +324,39 @@ func appTable(sessions []db.SessionStat, activities map[int64]db.ActivityStats) 
 	}
 
 	return t.Render()
+}
+
+func runDelete(args []string) error {
+	fs := flag.NewFlagSet("flowterm delete", flag.ContinueOnError)
+	all := fs.Bool("all", false, "delete every session with its activities and tag links")
+
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+
+	if fs.NArg() > 0 {
+		return fmt.Errorf("unexpected argument %q", fs.Arg(0))
+	}
+
+	if !*all {
+		return fmt.Errorf("--all is required")
+	}
+
+	conn, err := openConn()
+	if err != nil {
+		return err
+	}
+	defer utils.LogDeferredError(conn.Close)
+
+	res, err := db.New(conn).DeleteAllSessions()
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf(
+		"deleted %d sessions, %d activities, %d tag links\n",
+		res.Sessions, res.Activities, res.TagLinks,
+	)
+
+	return nil
 }
