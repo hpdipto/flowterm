@@ -3,9 +3,9 @@ package db_test
 import (
 	"database/sql"
 	"errors"
-	"hpdipto/flowterm/db"
-	"hpdipto/flowterm/internal/testsupport"
-	"hpdipto/flowterm/utils"
+	"github.com/hpdipto/flowterm/db"
+	"github.com/hpdipto/flowterm/internal/testsupport"
+	"github.com/hpdipto/flowterm/utils"
 	"path/filepath"
 	"strings"
 	"testing"

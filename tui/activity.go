@@ -1,9 +1,9 @@
 package tui
 
 import (
-	"hpdipto/flowterm/activity"
-	"hpdipto/flowterm/db"
-	"hpdipto/flowterm/utils"
+	"github.com/hpdipto/flowterm/activity"
+	"github.com/hpdipto/flowterm/db"
+	"github.com/hpdipto/flowterm/utils"
 	"time"
 )
 

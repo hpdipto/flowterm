@@ -2,8 +2,8 @@ package tui
 
 import (
 	"fmt"
-	"hpdipto/flowterm/db"
-	"hpdipto/flowterm/utils"
+	"github.com/hpdipto/flowterm/db"
+	"github.com/hpdipto/flowterm/utils"
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"

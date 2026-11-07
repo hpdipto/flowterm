@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"hpdipto/flowterm/utils"
+	"github.com/hpdipto/flowterm/utils"
 	"strings"
 	"time"
 )

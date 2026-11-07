@@ -1,8 +1,8 @@
 package tui
 
 import (
-	"hpdipto/flowterm/config"
-	"hpdipto/flowterm/db"
+	"github.com/hpdipto/flowterm/config"
+	"github.com/hpdipto/flowterm/db"
 	"strconv"
 	"strings"
 

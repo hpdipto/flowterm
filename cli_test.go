@@ -3,8 +3,8 @@ package main
 import (
 	"errors"
 	"flag"
-	"hpdipto/flowterm/db"
-	"hpdipto/flowterm/utils"
+	"github.com/hpdipto/flowterm/db"
+	"github.com/hpdipto/flowterm/utils"
 	"io"
 	"os"
 	"path/filepath"

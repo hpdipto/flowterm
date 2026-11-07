@@ -2,8 +2,8 @@ package testsupport
 
 import (
 	"database/sql"
-	"hpdipto/flowterm/db"
-	"hpdipto/flowterm/utils"
+	"github.com/hpdipto/flowterm/db"
+	"github.com/hpdipto/flowterm/utils"
 	"path/filepath"
 	"testing"
 )

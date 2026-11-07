@@ -1,10 +1,10 @@
 package db_test
 
 import (
-	"hpdipto/flowterm/config"
-	"hpdipto/flowterm/db"
-	"hpdipto/flowterm/internal/testsupport"
-	"hpdipto/flowterm/utils"
+	"github.com/hpdipto/flowterm/config"
+	"github.com/hpdipto/flowterm/db"
+	"github.com/hpdipto/flowterm/internal/testsupport"
+	"github.com/hpdipto/flowterm/utils"
 	"path/filepath"
 	"testing"
 )

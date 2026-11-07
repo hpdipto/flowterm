@@ -2,8 +2,8 @@ package db_test
 
 import (
 	"database/sql"
-	"hpdipto/flowterm/db"
-	"hpdipto/flowterm/internal/testsupport"
+	"github.com/hpdipto/flowterm/db"
+	"github.com/hpdipto/flowterm/internal/testsupport"
 	"slices"
 	"strings"
 	"testing"

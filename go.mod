@@ -1,4 +1,4 @@
-module hpdipto/flowterm
+module github.com/hpdipto/flowterm
 
 go 1.27.1
 

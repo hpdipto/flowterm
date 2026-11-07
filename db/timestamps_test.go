@@ -1,8 +1,8 @@
 package db_test
 
 import (
-	"hpdipto/flowterm/db"
-	"hpdipto/flowterm/internal/testsupport"
+	"github.com/hpdipto/flowterm/db"
+	"github.com/hpdipto/flowterm/internal/testsupport"
 	"testing"
 	"time"
 )

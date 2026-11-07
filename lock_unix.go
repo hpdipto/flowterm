@@ -5,7 +5,7 @@ package main
 import (
 	"errors"
 	"fmt"
-	"hpdipto/flowterm/utils"
+	"github.com/hpdipto/flowterm/utils"
 	"os"
 	"path/filepath"
 	"syscall"

@@ -2,7 +2,7 @@ package tui
 
 import (
 	"fmt"
-	"hpdipto/flowterm/db"
+	"github.com/hpdipto/flowterm/db"
 	"image/color"
 	"os"
 	"strings"

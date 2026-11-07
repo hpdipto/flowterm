@@ -2,7 +2,7 @@ package db
 
 import (
 	"database/sql"
-	"hpdipto/flowterm/utils"
+	"github.com/hpdipto/flowterm/utils"
 	"strings"
 
 	_ "modernc.org/sqlite"

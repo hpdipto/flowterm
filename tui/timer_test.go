@@ -2,7 +2,7 @@ package tui
 
 import (
 	"database/sql"
-	"hpdipto/flowterm/internal/testsupport"
+	"github.com/hpdipto/flowterm/internal/testsupport"
 	"strings"
 	"testing"
 )

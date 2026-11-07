@@ -1,7 +1,7 @@
 package db
 
 import (
-	"hpdipto/flowterm/utils"
+	"github.com/hpdipto/flowterm/utils"
 	"time"
 )
 

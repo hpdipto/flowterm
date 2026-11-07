@@ -2,8 +2,8 @@ package tui
 
 import (
 	"fmt"
-	"hpdipto/flowterm/activity"
-	"hpdipto/flowterm/db"
+	"github.com/hpdipto/flowterm/activity"
+	"github.com/hpdipto/flowterm/db"
 	"time"
 
 	"charm.land/bubbles/v2/textinput"
