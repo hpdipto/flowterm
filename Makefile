@@ -16,7 +16,5 @@ migration-status:
 	goose -dir db/migrations sqlite3 $(DB_NAME) status
 
 tag:
-	@current=$$(git describe --tags --abbrev=0 2>/dev/null || echo v0.0.0); \
-	major=$${current%%.*}; rest=$${current#*.}; minor=$${rest%%.*}; patch=$${rest#*.}; \
-	next="$$major.$$minor.$$((patch+1))"; \
+	@next=$$(svu next --always --v0); \
 	git tag -a "$$next" -m "$$next" && git push origin "$$next"
