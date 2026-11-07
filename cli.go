@@ -37,20 +37,29 @@ func dbPath() (string, error) {
 	return filepath.Join(dir, "flowterm.db"), nil
 }
 
-func parseGlobal(args []string) ([]string, error) {
+// version is set at build time: -ldflags "-X main.version=v0.1.0".
+var version = "dev"
+
+func parseGlobal(args []string) ([]string, bool, error) {
 	fs := flag.NewFlagSet("flowterm", flag.ContinueOnError)
+	showVersion := fs.Bool("version", false, "print version and exit")
 
 	if err := fs.Parse(args); err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
-	return fs.Args(), nil
+	return fs.Args(), *showVersion, nil
 }
 
 func run(args []string) error {
-	rest, err := parseGlobal(args)
+	rest, showVersion, err := parseGlobal(args)
 	if err != nil {
 		return err
+	}
+
+	if showVersion {
+		fmt.Println(version)
+		return nil
 	}
 
 	if len(rest) == 0 {

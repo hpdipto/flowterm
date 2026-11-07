@@ -16,19 +16,21 @@ import (
 
 func TestParseGlobal(t *testing.T) {
 	tests := []struct {
-		name    string
-		args    []string
-		want    []string
-		wantErr bool
+		name        string
+		args        []string
+		want        []string
+		wantVersion bool
+		wantErr     bool
 	}{
 		{name: "no args", args: nil},
 		{name: "command", args: []string{"stats"}, want: []string{"stats"}},
+		{name: "version flag", args: []string{"--version"}, wantVersion: true},
 		{name: "unknown flag", args: []string{"-x"}, wantErr: true},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := parseGlobal(tt.args)
+			got, versionFlag, err := parseGlobal(tt.args)
 			if tt.wantErr {
 				if err == nil {
 					t.Fatal("expected error, got nil")
@@ -40,6 +42,9 @@ func TestParseGlobal(t *testing.T) {
 			}
 			if !slices.Equal(got, tt.want) {
 				t.Fatalf("got %v, want %v", got, tt.want)
+			}
+			if versionFlag != tt.wantVersion {
+				t.Fatalf("version flag = %v, want %v", versionFlag, tt.wantVersion)
 			}
 		})
 	}
