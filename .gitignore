@@ -2,3 +2,5 @@
 *.db
 *.db.lock
 flowterm
+
+.DS_Store
