@@ -9,6 +9,7 @@ import (
 	"github.com/hpdipto/flowterm/utils"
 	"os"
 	"path/filepath"
+	"runtime/debug"
 	"sort"
 	"strconv"
 	"strings"
@@ -40,6 +41,19 @@ func dbPath() (string, error) {
 // version is set at build time: -ldflags "-X main.version=v0.1.0".
 var version = "dev"
 
+func versionString() string {
+	if version != "dev" {
+		return version
+	}
+
+	info, ok := debug.ReadBuildInfo()
+	if ok && info.Main.Version != "" && info.Main.Version != "(devel)" {
+		return info.Main.Version
+	}
+
+	return version
+}
+
 func parseGlobal(args []string) ([]string, bool, error) {
 	fs := flag.NewFlagSet("flowterm", flag.ContinueOnError)
 	showVersion := fs.Bool("version", false, "print version and exit")
@@ -58,7 +72,7 @@ func run(args []string) error {
 	}
 
 	if showVersion {
-		fmt.Println(version)
+		fmt.Println(versionString())
 		return nil
 	}
 
