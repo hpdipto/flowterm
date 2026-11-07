@@ -202,15 +202,7 @@ func inCLIWorkspace(t *testing.T, dbPath string) {
 	t.Helper()
 
 	t.Setenv("DB_NAME", dbPath)
-
-	dir := t.TempDir()
-	env := "DB_NAME=" + dbPath + "\n"
-
-	if err := os.WriteFile(filepath.Join(dir, ".env"), []byte(env), 0o600); err != nil {
-		t.Fatalf("write .env: %v", err)
-	}
-
-	t.Chdir(dir)
+	t.Chdir(t.TempDir())
 }
 
 func captureStdout(t *testing.T, fn func() error) (string, error) {
@@ -353,4 +345,43 @@ func TestRunDeleteInvalidArgs(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestDBPath(t *testing.T) {
+	t.Run("defaults under config dir", func(t *testing.T) {
+		home := t.TempDir()
+		t.Setenv("HOME", home)
+		t.Setenv("DB_NAME", "")
+
+		path, err := dbPath()
+		if err != nil {
+			t.Fatalf("dbPath: %v", err)
+		}
+
+		want := filepath.Join(home, ".config", "flowterm", "flowterm.db")
+		if path != want {
+			t.Fatalf("dbPath = %q, want %q", path, want)
+		}
+
+		info, err := os.Stat(filepath.Dir(path))
+		if err != nil {
+			t.Fatalf("stat dir: %v", err)
+		}
+		if !info.IsDir() {
+			t.Fatalf("%q is not a directory", filepath.Dir(path))
+		}
+	})
+
+	t.Run("DB_NAME overrides", func(t *testing.T) {
+		want := filepath.Join(t.TempDir(), "custom.db")
+		t.Setenv("DB_NAME", want)
+
+		path, err := dbPath()
+		if err != nil {
+			t.Fatalf("dbPath: %v", err)
+		}
+		if path != want {
+			t.Fatalf("dbPath = %q, want %q", path, want)
+		}
+	})
 }

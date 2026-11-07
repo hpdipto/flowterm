@@ -8,6 +8,7 @@ import (
 	"hpdipto/flowterm/tui"
 	"hpdipto/flowterm/utils"
 	"os"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -16,8 +17,25 @@ import (
 	"charm.land/lipgloss/v2"
 	"charm.land/lipgloss/v2/table"
 	"github.com/charmbracelet/x/term"
-	"github.com/joho/godotenv"
 )
+
+func dbPath() (string, error) {
+	if path := os.Getenv("DB_NAME"); path != "" {
+		return path, nil
+	}
+
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+
+	dir := filepath.Join(home, ".config", "flowterm")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return "", err
+	}
+
+	return filepath.Join(dir, "flowterm.db"), nil
+}
 
 func parseGlobal(args []string) ([]string, error) {
 	fs := flag.NewFlagSet("flowterm", flag.ContinueOnError)
@@ -50,11 +68,12 @@ func run(args []string) error {
 }
 
 func openConn() (*sql.DB, error) {
-	if err := godotenv.Load(); err != nil {
+	path, err := dbPath()
+	if err != nil {
 		return nil, err
 	}
 
-	conn, err := db.Open(os.Getenv("DB_NAME"))
+	conn, err := db.Open(path)
 	if err != nil {
 		return nil, err
 	}
@@ -73,11 +92,10 @@ func openConn() (*sql.DB, error) {
 }
 
 func runTUI() error {
-	if err := godotenv.Load(); err != nil {
+	path, err := dbPath()
+	if err != nil {
 		return err
 	}
-
-	path := os.Getenv("DB_NAME")
 
 	lock, err := acquireLock(path)
 	if err != nil {
