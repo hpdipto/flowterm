@@ -15,6 +15,9 @@ migration-status:
 	@mkdir -p $(dir $(DB_NAME))
 	goose -dir db/migrations sqlite3 $(DB_NAME) status
 
+test:
+	go test ./...
+
 tag:
 	@next=$$(svu next --always --v0); \
 	git tag -a "$$next" -m "$$next" && git push origin "$$next"
