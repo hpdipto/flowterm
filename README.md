@@ -1,5 +1,9 @@
 # flowterm
 
+<p align="center">
+  <img src="assets/icon.png" width="120" alt="flowterm icon">
+</p>
+
 A terminal focus timer. Run focus and break sessions, see which apps you used
 while working, and review your history without leaving the terminal.
 
