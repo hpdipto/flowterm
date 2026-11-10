@@ -100,10 +100,11 @@ func (m model) sessionViewUpdateWithKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd
 	return m, nil
 }
 
-func (m model) saveActivities() {
+func (m *model) saveActivities() {
 	if m.tracker == nil || len(m.sessions) == 0 {
 		return
 	}
 
 	utils.LogError(m.tracker.stop())
+	m.tracker = nil
 }

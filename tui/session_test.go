@@ -302,3 +302,56 @@ func TestSessionViewUpdateStartsBreakAfterFocus(t *testing.T) {
 		t.Errorf("sessionIndex = %d, want 1", got.sessionIndex)
 	}
 }
+
+func TestSampleTickStopsWhenBreakSkipped(t *testing.T) {
+	database, conn := testsupport.OpenDB(t)
+
+	s := &db.Session{FocusSessionName: "Focus", FocusSessionDuration: 25}
+	if err := database.CreateSession(s); err != nil {
+		t.Fatalf("create session: %v", err)
+	}
+
+	m := model{
+		stage:    timerStage,
+		database: database,
+		sessions: []session{{id: s.ID, name: "Focus"}},
+		tracker:  newTracker(database, s.ID),
+	}
+
+	next, cmd := m.sessionViewUpdate()
+	if cmd == nil {
+		t.Fatal("expected quit command")
+	}
+
+	got, ok := next.(model)
+	if !ok {
+		t.Fatalf("model = %T, want tui.model", next)
+	}
+	if got.tracker != nil {
+		t.Fatal("tracker should be cleared after session end")
+	}
+
+	updated, cmd := got.Update(sampleTickMsg(time.Now()))
+	if cmd != nil {
+		t.Error("expected sampling to stop when no session is left")
+	}
+
+	afterTick, ok := updated.(model)
+	if !ok {
+		t.Fatalf("model = %T, want tui.model", updated)
+	}
+	if afterTick.tracker != nil {
+		t.Error("tracker should stay nil after session end")
+	}
+
+	var breakRows int
+	if err := conn.QueryRow(
+		"SELECT COUNT(*) FROM session_activities WHERE session_id = ? AND phase = ?",
+		s.ID, db.PhaseBreak,
+	).Scan(&breakRows); err != nil {
+		t.Fatalf("count break activities: %v", err)
+	}
+	if breakRows != 0 {
+		t.Errorf("break activities = %d, want 0", breakRows)
+	}
+}

@@ -2,9 +2,10 @@ package tui
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/hpdipto/flowterm/activity"
 	"github.com/hpdipto/flowterm/db"
-	"time"
 
 	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
@@ -70,7 +71,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.sessionViewUpdate()
 
 	case sampleTickMsg:
-		if m.tracker == nil {
+		if m.tracker == nil || m.sessionIndex >= len(m.sessions) {
 			return m, nil
 		}
 
